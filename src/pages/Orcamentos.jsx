@@ -86,7 +86,7 @@ export default function Orcamentos() {
                   <Row label="Cliente" value={o.cliente_nome || "—"} />
                   <Row label="UF" value={o.uf || "—"} />
                   <Row label="Peso total" value={`${formatPeso(o.peso_total_aco)} kg`} />
-                  <Row label="Valor de venda" value={formatMoeda(o.valor_venda)} strong />
+                  <Row label="Total do cliente" value={formatMoeda(o.total_cliente)} strong />
                 </div>
                 <div className="mt-4 flex items-center gap-2 pt-3 border-t border-slate-100">
                   <Link to={`/orcamento/${o.id}`} className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-700 hover:text-slate-900">

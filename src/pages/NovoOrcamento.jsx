@@ -1,19 +1,20 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Layers, Boxes, Calculator } from "lucide-react";
+import { ArrowLeft, Layers, Boxes, Calculator, Coins } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "react-hot-toast";
 import ClienteForm from "@/components/orcamento/ClienteForm";
 import ComponenteGrid from "@/components/orcamento/ComponenteGrid";
 import ComponenteComercialGrid from "@/components/orcamento/ComponenteComercialGrid";
+import CustoAcoCard from "@/components/orcamento/CustoAcoCard";
 import CustosAdicionais from "@/components/orcamento/CustosAdicionais";
 import FormacaoPreco from "@/components/orcamento/FormacaoPreco";
 import TotalizadorBar from "@/components/orcamento/TotalizadorBar";
 import { gerarPDFOrcamento } from "@/lib/pdfOrcamento";
 import {
   PRODUTO_PRESETS, ICMS_POR_UF, recalcComponente,
-  calcTotais, calcCustoTotal, calcCargaTributaria,
-  calcPrecoVendaParaMargem, calcResultadoVenda,
+  calcTotais, calcCustoAco, calcCustoEmpresa, calcTotalCliente,
+  calcCargaTributaria, calcPrecoVendaParaMargem, calcResultadoVenda,
 } from "@/lib/pricingEngine";
 
 export default function NovoOrcamento() {
@@ -31,8 +32,11 @@ export default function NovoOrcamento() {
   });
   const [componentes, setComponentes] = useState([]);
   const [comerciais, setComerciais] = useState([]);
+  const [precoAcoKg, setPrecoAcoKg] = useState(15);
   const [montagem, setMontagem] = useState(0);
   const [frete, setFrete] = useState(0);
+  const [cobrarMontagem, setCobrarMontagem] = useState(false);
+  const [cobrarFrete, setCobrarFrete] = useState(false);
   const [comissao, setComissao] = useState(0);
   const [margemMinima, setMargemMinima] = useState(15);
   const [margemAdequada, setMargemAdequada] = useState(30);
@@ -66,8 +70,11 @@ export default function NovoOrcamento() {
         });
         setComponentes(orc.componentes || []);
         setComerciais(orc.componentes_comerciais || []);
+        setPrecoAcoKg(orc.preco_aco_kg ?? 15);
         setMontagem(orc.montagem ?? 0);
         setFrete(orc.frete ?? 0);
+        setCobrarMontagem(!!orc.cobrar_montagem);
+        setCobrarFrete(!!orc.cobrar_frete);
         setComissao(orc.comissao_percentual ?? 0);
         setMargemMinima(orc.margem_minima ?? 15);
         setMargemAdequada(orc.margem_adequada ?? 30);
@@ -85,7 +92,7 @@ export default function NovoOrcamento() {
     if (id) return;
     const preset = PRODUTO_PRESETS[tipo];
     if (!preset) return;
-    setComponentes(preset.map((p) => recalcComponente({ ...p, custo_aco_id: "", peso_especifico: 0, preco_kg: 0 })));
+    setComponentes(preset.map((p) => recalcComponente({ ...p, custo_aco_id: "", peso_especifico: 0 })));
     if (!form.titulo) setForm((f) => ({ ...f, titulo: `${tipo} — ${f.cliente_nome || "Novo orçamento"}` }));
   };
 
@@ -95,29 +102,34 @@ export default function NovoOrcamento() {
   };
 
   const totais = useMemo(() => calcTotais(componentes, comerciais), [componentes, comerciais]);
-  const custoTotal = useMemo(
-    () => calcCustoTotal(totais.custo_total_aco, totais.custo_acessorios, montagem, frete),
-    [totais, montagem, frete]
+  const custoAco = useMemo(() => calcCustoAco(totais.peso_total_aco, precoAcoKg), [totais.peso_total_aco, precoAcoKg]);
+  const custoEmpresa = useMemo(
+    () => calcCustoEmpresa(custoAco, totais.custo_acessorios, montagem, frete, cobrarMontagem, cobrarFrete),
+    [custoAco, totais.custo_acessorios, montagem, frete, cobrarMontagem, cobrarFrete]
   );
   const carga = useMemo(() => calcCargaTributaria(form.uf), [form.uf]);
   const resultado = useMemo(
-    () => calcResultadoVenda(valorVenda, custoTotal, carga.total, comissao),
-    [valorVenda, custoTotal, carga, comissao]
+    () => calcResultadoVenda(valorVenda, custoEmpresa, carga.total, comissao),
+    [valorVenda, custoEmpresa, carga, comissao]
+  );
+  const totalCliente = useMemo(
+    () => calcTotalCliente(valorVenda, montagem, frete, cobrarMontagem, cobrarFrete),
+    [valorVenda, montagem, frete, cobrarMontagem, cobrarFrete]
   );
   const precoMinimo = useMemo(
-    () => calcPrecoVendaParaMargem(custoTotal, margemMinima, carga.total, comissao),
-    [custoTotal, margemMinima, carga, comissao]
+    () => calcPrecoVendaParaMargem(custoEmpresa, margemMinima, carga.total, comissao),
+    [custoEmpresa, margemMinima, carga, comissao]
   );
   const precoAdequado = useMemo(
-    () => calcPrecoVendaParaMargem(custoTotal, margemAdequada, carga.total, comissao),
-    [custoTotal, margemAdequada, carga, comissao]
+    () => calcPrecoVendaParaMargem(custoEmpresa, margemAdequada, carga.total, comissao),
+    [custoEmpresa, margemAdequada, carga, comissao]
   );
 
   // Sugere automaticamente o preço adequado quando o custo muda e o usuário ainda não definiu um valor.
   useEffect(() => {
-    if (!id && custoTotal > 0 && !valorVenda) setValorVenda(Number(precoAdequado.toFixed(2)));
+    if (!id && custoEmpresa > 0 && !valorVenda) setValorVenda(Number(precoAdequado.toFixed(2)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [custoTotal]);
+  }, [custoEmpresa]);
 
   const salvar = async () => {
     if (!form.titulo || !form.tipo_produto) {
@@ -125,19 +137,23 @@ export default function NovoOrcamento() {
       return;
     }
     setSaving(true);
+    const componentesComCusto = componentes.map((c) => ({ ...c, custo: (c.peso_total || 0) * precoAcoKg, preco_kg: precoAcoKg }));
     const payload = {
       ...form,
-      componentes,
+      componentes: componentesComCusto,
       componentes_comerciais: comerciais,
-      custo_total_aco: totais.custo_total_aco,
+      preco_aco_kg: precoAcoKg,
       peso_total_aco: totais.peso_total_aco,
+      custo_total_aco: custoAco,
       custo_acessorios: totais.custo_acessorios,
-      montagem, frete,
+      montagem, cobrar_montagem: cobrarMontagem,
+      frete, cobrar_frete: cobrarFrete,
       comissao_percentual: comissao,
       margem_minima: margemMinima,
       margem_adequada: margemAdequada,
       valor_venda: valorVenda,
-      custo_total: custoTotal,
+      custo_empresa: custoEmpresa,
+      total_cliente: totalCliente,
       carga_tributaria: carga.total,
       impostos_valor: resultado.impostos,
       comissao_valor: resultado.comissao,
@@ -168,10 +184,14 @@ export default function NovoOrcamento() {
     gerarPDFOrcamento({
       ...form,
       componentes, componentes_comerciais: comerciais,
-      custo_total_aco: totais.custo_total_aco,
+      preco_aco_kg: precoAcoKg,
       peso_total_aco: totais.peso_total_aco,
+      custo_total_aco: custoAco,
       custo_acessorios: totais.custo_acessorios,
-      montagem, frete, valor_venda: valorVenda,
+      montagem, cobrar_montagem: cobrarMontagem,
+      frete, cobrar_frete: cobrarFrete,
+      valor_venda: valorVenda,
+      total_cliente: totalCliente,
     });
   };
 
@@ -183,9 +203,7 @@ export default function NovoOrcamento() {
     <div className="min-h-screen pb-28 bg-slate-50">
       <header className="bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-3">
-          <button onClick={() => navigate("/")} className="p-2 rounded-lg text-slate-500 hover:bg-slate-100">
-            <ArrowLeft size={20} />
-          </button>
+          <button onClick={() => navigate("/")} className="p-2 rounded-lg text-slate-500 hover:bg-slate-100"><ArrowLeft size={20} /></button>
           <div>
             <h1 className="text-lg font-semibold text-slate-900">{id ? "Editar orçamento" : "Novo orçamento"}</h1>
             <p className="text-sm text-slate-500">Dados do cliente, peças e formação de preço</p>
@@ -199,8 +217,13 @@ export default function NovoOrcamento() {
         </section>
 
         <section>
-          <SectionTitle icon={<Layers size={18} />} title="Peças estruturais" subtitle="Corte × Comprimento × Peso específico = Peso. Recalculado em tempo real." />
-          <ComponenteGrid componentes={componentes} acoOptions={acoOptions} onChange={setComponentes} />
+          <SectionTitle icon={<Layers size={18} />} title="Peças estruturais" subtitle="Corte × Comprimento × Peso específico = Peso. Selecione a chapa para o peso; o custo vem do preço do aço abaixo." />
+          <ComponenteGrid componentes={componentes} acoOptions={acoOptions} precoKg={precoAcoKg} onChange={setComponentes} />
+        </section>
+
+        <section>
+          <SectionTitle icon={<Coins size={18} />} title="Custo do Aço" subtitle="Informe o preço de mercado do aço (R$/kg). O sistema calcula peso total × preço." />
+          <CustoAcoCard pesoTotal={totais.peso_total_aco} precoKg={precoAcoKg} setPrecoKg={setPrecoAcoKg} custoAco={custoAco} />
         </section>
 
         <section>
@@ -209,10 +232,10 @@ export default function NovoOrcamento() {
         </section>
 
         <section>
-          <SectionTitle icon={<Calculator size={18} />} title="Custos adicionais" subtitle="Montagem, frete, comissão e metas de margem — editáveis por negociação." />
+          <SectionTitle icon={<Calculator size={18} />} title="Custos adicionais" subtitle="Montagem e frete (marque se o cliente paga), comissão e metas de margem." />
           <CustosAdicionais
-            montagem={montagem} setMontagem={setMontagem}
-            frete={frete} setFrete={setFrete}
+            montagem={montagem} setMontagem={setMontagem} cobrarMontagem={cobrarMontagem} setCobrarMontagem={setCobrarMontagem}
+            frete={frete} setFrete={setFrete} cobrarFrete={cobrarFrete} setCobrarFrete={setCobrarFrete}
             comissao={comissao} setComissao={setComissao}
             margemMinima={margemMinima} setMargemMinima={setMargemMinima}
             margemAdequada={margemAdequada} setMargemAdequada={setMargemAdequada}
@@ -223,36 +246,25 @@ export default function NovoOrcamento() {
         <section>
           <SectionTitle icon={<Calculator size={18} />} title="Formação de preço" subtitle="Tributos do Lucro Presumido, margem real e sugestão de preço de venda." />
           <FormacaoPreco
-            custoAco={totais.custo_total_aco}
-            custoAcessorios={totais.custo_acessorios}
-            montagem={montagem}
-            frete={frete}
-            custoTotal={custoTotal}
-            carga={carga}
-            comissaoPct={comissao}
-            comissaoValor={resultado.comissao}
-            impostosValor={resultado.impostos}
-            resultado={resultado}
-            margemMinima={margemMinima}
-            margemAdequada={margemAdequada}
-            precoMinimo={precoMinimo}
-            precoAdequado={precoAdequado}
+            custoAco={custoAco} custoAcessorios={totais.custo_acessorios}
+            montagem={montagem} frete={frete} cobrarMontagem={cobrarMontagem} cobrarFrete={cobrarFrete}
+            custoEmpresa={custoEmpresa} totalCliente={totalCliente}
+            carga={carga} comissaoPct={comissao} comissaoValor={resultado.comissao} impostosValor={resultado.impostos}
+            resultado={resultado} margemMinima={margemMinima} margemAdequada={margemAdequada}
+            precoMinimo={precoMinimo} precoAdequado={precoAdequado}
             onUsarPreco={(v) => setValorVenda(Number(v.toFixed(2)))}
           />
         </section>
       </main>
 
       <TotalizadorBar
-        totais={totais}
-        custoTotal={custoTotal}
-        valorVenda={valorVenda}
-        setValorVenda={setValorVenda}
+        pesoTotal={totais.peso_total_aco}
+        custoEmpresa={custoEmpresa}
+        valorVenda={valorVenda} setValorVenda={setValorVenda}
+        totalCliente={totalCliente}
         resultado={resultado}
-        margemMinima={margemMinima}
-        margemAdequada={margemAdequada}
-        onSave={salvar}
-        onPDF={gerarPDF}
-        saving={saving}
+        margemMinima={margemMinima} margemAdequada={margemAdequada}
+        onSave={salvar} onPDF={gerarPDF} saving={saving}
       />
     </div>
   );

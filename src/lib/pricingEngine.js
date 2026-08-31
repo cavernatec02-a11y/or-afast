@@ -2,9 +2,7 @@
 // e adiciona formação de preço completa para empresa no regime de Lucro Presumido.
 // Nenhum valor é arredondado precocemente; arredondamentos só na exibição.
 
-// ---------------------------------------------------------------------------
 // ICMS interestadual por UF (aba "custo", colunas P/Q)
-// ---------------------------------------------------------------------------
 export const ICMS_POR_UF = {
   AC: 0.07, AL: 0.07, AP: 0.07, AM: 0.07, BA: 0.07, CE: 0.07,
   ES: 0.07, GO: 0.07, MA: 0.07, MT: 0.07, MS: 0.07, PA: 0.07,
@@ -14,31 +12,20 @@ export const ICMS_POR_UF = {
 };
 export const UFS = Object.keys(ICMS_POR_UF).sort();
 
-// ---------------------------------------------------------------------------
-// Regime: Lucro Presumido — venda de produtos (comércio/indústria)
-// Base de presunção de lucro: 8%. Tributos sobre o faturamento (preço de venda).
-// ---------------------------------------------------------------------------
+// Regime: Lucro Presumido — venda de produtos (comércio/indústria). Base de presunção: 8%.
 export const LUCRO_PRESUMIDO = {
-  pis: 0.0065,            // 0,65% sobre faturamento
-  cofins: 0.03,           // 3,00% sobre faturamento
-  csll: 0.0072,           // 9% × 8% (base de presunção)
-  irpj: 0.012,            // 15% × 8% (base de presunção)
-  irpj_adicional: 0.004,  // aproximação do adicional de 10%
+  pis: 0.0065, cofins: 0.03, csll: 0.0072, irpj: 0.012, irpj_adicional: 0.004,
 };
 export function calcCargaFederal() {
   return LUCRO_PRESUMIDO.pis + LUCRO_PRESUMIDO.cofins + LUCRO_PRESUMIDO.csll + LUCRO_PRESUMIDO.irpj + LUCRO_PRESUMIDO.irpj_adicional;
 }
-
-// Carga tributária total sobre o faturamento (federal + ICMS estadual)
 export function calcCargaTributaria(uf) {
   const federal = calcCargaFederal();
   const icms = ICMS_POR_UF[uf] || 0;
   return { federal, icms, total: federal + icms };
 }
 
-// ---------------------------------------------------------------------------
 // Presets de peças por tipo de produto
-// ---------------------------------------------------------------------------
 export const PRODUTO_PRESETS = {
   "P.Pallets": [
     { nome: "Coluna", quantidade: 2, corte: 0.25, comprimento: 6.004 },
@@ -96,23 +83,17 @@ export const PRODUTO_PRESETS = {
 };
 export const TIPOS_PRODUTO = Object.keys(PRODUTO_PRESETS);
 
-// ---------------------------------------------------------------------------
-// Cálculos de peso e custo das peças
-// ---------------------------------------------------------------------------
+// Cálculos de peso (geometria) — o custo vem do preço global do aço (R$/kg), não por chapa.
 export function calcPesoUnit(corte, comprimento, pesoEspecifico) {
   return (Number(corte) || 0) * (Number(comprimento) || 0) * (Number(pesoEspecifico) || 0);
 }
 export function calcPesoTotal(pesoUnit, quantidade) {
   return (Number(pesoUnit) || 0) * (Number(quantidade) || 0);
 }
-export function calcCustoComponente(pesoTotal, precoKg) {
-  return (Number(pesoTotal) || 0) * (Number(precoKg) || 0);
-}
 export function recalcComponente(comp) {
   const pesoUnit = calcPesoUnit(comp.corte, comp.comprimento, comp.peso_especifico);
   const pesoTotal = calcPesoTotal(pesoUnit, comp.quantidade);
-  const custo = calcCustoComponente(pesoTotal, comp.preco_kg);
-  return { ...comp, peso_unit: pesoUnit, peso_total: pesoTotal, custo };
+  return { ...comp, peso_unit: pesoUnit, peso_total: pesoTotal };
 }
 export function recalcComercial(comp) {
   const total = (Number(comp.quantidade) || 0) * (Number(comp.custo_unitario) || 0);
@@ -120,38 +101,46 @@ export function recalcComercial(comp) {
 }
 export function calcTotais(componentes, componentesComerciais) {
   const peso_total_aco = (componentes || []).reduce((s, c) => s + (Number(c.peso_total) || 0), 0);
-  const custo_total_aco = (componentes || []).reduce((s, c) => s + (Number(c.custo) || 0), 0);
   const custo_acessorios = (componentesComerciais || []).reduce((s, c) => s + (Number(c.total) || 0), 0);
-  return { peso_total_aco, custo_total_aco, custo_acessorios };
+  return { peso_total_aco, custo_acessorios };
 }
 
-// ---------------------------------------------------------------------------
-// Formação de preço — Lucro Presumido
-// ---------------------------------------------------------------------------
-// Custo total = aço + acessórios + montagem + frete
-export function calcCustoTotal(custoAco, custoAcessorios, montagem, frete) {
-  return (Number(custoAco) || 0) + (Number(custoAcessorios) || 0) + (Number(montagem) || 0) + (Number(frete) || 0);
+// Custo do aço = peso total × preço do kg do aço (preço de mercado, informado pelo usuário)
+export function calcCustoAco(pesoTotal, precoKg) {
+  return (Number(pesoTotal) || 0) * (Number(precoKg) || 0);
 }
 
-// Preço de venda necessário para atingir uma margem M (sobre preço de venda, líquido de impostos e comissão):
-//   margem = 1 - custo/PV - carga_tributaria - comissao  =>  PV = custo / (1 - margem - carga - comissao)
+// Custo da empresa (base para margem): aço + acessórios + montagem/frete ABSORVIDOS (não cobrados do cliente)
+export function calcCustoEmpresa(custoAco, custoAcessorios, montagem, frete, cobrarMontagem, cobrarFrete) {
+  const m = cobrarMontagem ? 0 : (Number(montagem) || 0);
+  const f = cobrarFrete ? 0 : (Number(frete) || 0);
+  return (Number(custoAco) || 0) + (Number(custoAcessorios) || 0) + m + f;
+}
+
+// Total que o cliente paga = valor de venda + montagem/frete repassados (cobrados do cliente)
+export function calcTotalCliente(valorVenda, montagem, frete, cobrarMontagem, cobrarFrete) {
+  const m = cobrarMontagem ? (Number(montagem) || 0) : 0;
+  const f = cobrarFrete ? (Number(frete) || 0) : 0;
+  return (Number(valorVenda) || 0) + m + f;
+}
+
+// Preço de venda para atingir margem M: PV = custo / (1 - margem - carga - comissao)
 export function calcPrecoVendaParaMargem(custoTotal, margemPct, cargaTotal, comissaoPct) {
   const denom = 1 - (Number(margemPct) || 0) / 100 - (Number(cargaTotal) || 0) - (Number(comissaoPct) || 0) / 100;
   if (denom <= 0) return Infinity;
   return (Number(custoTotal) || 0) / denom;
 }
 
-// Dado um valor de venda definido, calcula a margem real e o lucro líquido
-export function calcResultadoVenda(valorVenda, custoTotal, cargaTotal, comissaoPct) {
+// Resultado dado o valor de venda: margem real e lucro líquido
+export function calcResultadoVenda(valorVenda, custoEmpresa, cargaTotal, comissaoPct) {
   const vv = Number(valorVenda) || 0;
   const comissao = vv * ((Number(comissaoPct) || 0) / 100);
   const impostos = vv * (Number(cargaTotal) || 0);
-  const lucro = vv - (Number(custoTotal) || 0) - impostos - comissao;
+  const lucro = vv - (Number(custoEmpresa) || 0) - impostos - comissao;
   const margem = vv > 0 ? lucro / vv : 0;
   return { valorVenda: vv, comissao, impostos, lucro, margem };
 }
 
-// Status da margem frente aos limites mínimo e adequado
 export function statusMargem(margemReal, margemMinima, margemAdequada) {
   const m = (Number(margemReal) || 0) * 100;
   const min = Number(margemMinima) || 0;
@@ -161,9 +150,6 @@ export function statusMargem(margemReal, margemMinima, margemAdequada) {
   return { level: "ok", label: "Margem adequada", pct: m };
 }
 
-// ---------------------------------------------------------------------------
-// Formatação
-// ---------------------------------------------------------------------------
 export function formatMoeda(valor) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(valor) || 0);
 }

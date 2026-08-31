@@ -1,11 +1,10 @@
 import React from "react";
 import { FileDown, Save } from "lucide-react";
-import { formatMoeda, statusMargem } from "@/lib/pricingEngine";
+import { formatMoeda, formatPeso, statusMargem } from "@/lib/pricingEngine";
 
 export default function TotalizadorBar({
-  totais, custoTotal, valorVenda, setValorVenda,
-  resultado, margemMinima, margemAdequada,
-  onSave, onPDF, saving,
+  pesoTotal, custoEmpresa, valorVenda, setValorVenda, totalCliente,
+  resultado, margemMinima, margemAdequada, onSave, onPDF, saving,
 }) {
   const status = statusMargem(resultado.margem, margemMinima, margemAdequada);
   const badge = {
@@ -17,20 +16,15 @@ export default function TotalizadorBar({
   return (
     <div className="sticky bottom-0 z-20 border-t border-slate-200 bg-white/95 backdrop-blur-md shadow-[0_-4px_20px_-8px_rgba(0,0,0,0.15)]">
       <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center gap-x-5 gap-y-3">
-        <Stat label="Custo Total" value={formatMoeda(custoTotal)} />
-        <Stat label="Peso Aço" value={`${totais.peso_total_aco.toFixed(2)} kg`} />
+        <Stat label="Peso Total" value={`${formatPeso(pesoTotal)} kg`} highlight />
+        <Stat label="Custo da Empresa" value={formatMoeda(custoEmpresa)} />
+        <Stat label="Total do Cliente" value={formatMoeda(totalCliente)} />
 
         <label className="flex items-center gap-2">
           <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Valor de Venda</span>
           <div className="flex items-center gap-1">
             <span className="text-sm text-slate-400">R$</span>
-            <input
-              type="number"
-              step="0.01"
-              value={valorVenda ?? 0}
-              onChange={(e) => setValorVenda(Number(e.target.value))}
-              className="input-sm w-36 text-right font-bold text-slate-900"
-            />
+            <input type="number" step="0.01" value={valorVenda ?? 0} onChange={(e) => setValorVenda(Number(e.target.value))} className="input-sm w-36 text-right font-bold text-slate-900" />
           </div>
         </label>
 
@@ -54,12 +48,12 @@ export default function TotalizadorBar({
   );
 }
 
-function Stat({ label, value, tone }) {
-  const toneClass = tone === "emerald" ? "text-emerald-700" : tone === "red" ? "text-red-700" : "text-slate-800";
+function Stat({ label, value, tone, highlight }) {
+  const toneClass = tone === "emerald" ? "text-emerald-700" : tone === "red" ? "text-red-700" : highlight ? "text-slate-900" : "text-slate-700";
   return (
     <div>
       <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</div>
-      <div className={`text-base font-semibold tabular-nums ${toneClass}`}>{value}</div>
+      <div className={`text-base font-semibold tabular-nums ${toneClass} ${highlight ? "text-base" : ""}`}>{value}</div>
     </div>
   );
 }
