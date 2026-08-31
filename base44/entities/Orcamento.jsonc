@@ -11,6 +11,15 @@
     "cliente_id": {
       "type": "string"
     },
+    "contato": {
+      "type": "string"
+    },
+    "telefone": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
     "uf": {
       "type": "string",
       "description": "Unidade federativa para c\u00e1lculo de ICMS"
@@ -22,6 +31,10 @@
     "data": {
       "type": "string",
       "format": "date"
+    },
+    "validade_dias": {
+      "type": "number",
+      "default": 15
     },
     "componentes": {
       "type": "array",
@@ -36,16 +49,13 @@
             "type": "number"
           },
           "corte": {
-            "type": "number",
-            "description": "Corte em metros"
+            "type": "number"
           },
           "comprimento": {
-            "type": "number",
-            "description": "Comprimento em metros"
+            "type": "number"
           },
           "custo_aco_id": {
-            "type": "string",
-            "description": "FK para CustoAco"
+            "type": "string"
           },
           "peso_especifico": {
             "type": "number"
@@ -67,7 +77,6 @@
     },
     "componentes_comerciais": {
       "type": "array",
-      "description": "Componentes comercializados / terceirizados",
       "items": {
         "type": "object",
         "properties": {
@@ -98,13 +107,46 @@
     "custo_acessorios": {
       "type": "number"
     },
-    "margem_percentual": {
+    "montagem": {
+      "type": "number",
+      "description": "Custo de montagem (R$)"
+    },
+    "frete": {
+      "type": "number",
+      "description": "Custo de frete (R$)"
+    },
+    "comissao_percentual": {
+      "type": "number",
+      "description": "Comiss\u00e3o do vendedor (%)"
+    },
+    "margem_minima": {
+      "type": "number",
+      "default": 15
+    },
+    "margem_adequada": {
+      "type": "number",
+      "default": 30
+    },
+    "valor_venda": {
+      "type": "number",
+      "description": "Pre\u00e7o de venda proposto (R$)"
+    },
+    "custo_total": {
       "type": "number"
     },
-    "icms_percentual": {
+    "carga_tributaria": {
       "type": "number"
     },
-    "valor_final": {
+    "impostos_valor": {
+      "type": "number"
+    },
+    "comissao_valor": {
+      "type": "number"
+    },
+    "margem_real": {
+      "type": "number"
+    },
+    "lucro_real": {
       "type": "number"
     },
     "status": {
