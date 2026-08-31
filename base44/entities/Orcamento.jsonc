@@ -1,0 +1,125 @@
+{
+  "name": "Orcamento",
+  "type": "object",
+  "properties": {
+    "titulo": {
+      "type": "string"
+    },
+    "cliente_nome": {
+      "type": "string"
+    },
+    "cliente_id": {
+      "type": "string"
+    },
+    "uf": {
+      "type": "string",
+      "description": "Unidade federativa para c\u00e1lculo de ICMS"
+    },
+    "tipo_produto": {
+      "type": "string",
+      "description": "Ex.: P.Pallets, Drive In, Estantes, Cantilever..."
+    },
+    "data": {
+      "type": "string",
+      "format": "date"
+    },
+    "componentes": {
+      "type": "array",
+      "description": "Pe\u00e7as estruturais do or\u00e7amento",
+      "items": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string"
+          },
+          "quantidade": {
+            "type": "number"
+          },
+          "corte": {
+            "type": "number",
+            "description": "Corte em metros"
+          },
+          "comprimento": {
+            "type": "number",
+            "description": "Comprimento em metros"
+          },
+          "custo_aco_id": {
+            "type": "string",
+            "description": "FK para CustoAco"
+          },
+          "peso_especifico": {
+            "type": "number"
+          },
+          "preco_kg": {
+            "type": "number"
+          },
+          "peso_unit": {
+            "type": "number"
+          },
+          "peso_total": {
+            "type": "number"
+          },
+          "custo": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "componentes_comerciais": {
+      "type": "array",
+      "description": "Componentes comercializados / terceirizados",
+      "items": {
+        "type": "object",
+        "properties": {
+          "descricao": {
+            "type": "string"
+          },
+          "unidade": {
+            "type": "string"
+          },
+          "quantidade": {
+            "type": "number"
+          },
+          "custo_unitario": {
+            "type": "number"
+          },
+          "total": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "custo_total_aco": {
+      "type": "number"
+    },
+    "peso_total_aco": {
+      "type": "number"
+    },
+    "custo_acessorios": {
+      "type": "number"
+    },
+    "margem_percentual": {
+      "type": "number"
+    },
+    "icms_percentual": {
+      "type": "number"
+    },
+    "valor_final": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "rascunho",
+        "enviado",
+        "aprovado",
+        "recusado"
+      ],
+      "default": "rascunho"
+    }
+  },
+  "required": [
+    "titulo",
+    "tipo_produto"
+  ]
+}

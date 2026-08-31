@@ -1,0 +1,35 @@
+{
+  "name": "CustoAco",
+  "type": "object",
+  "properties": {
+    "codigo": {
+      "type": "string",
+      "description": "Ex.: # 14 (2,00)"
+    },
+    "aco_bitola": {
+      "type": "string",
+      "description": "Bitola do a\u00e7o (ex.: # 14)"
+    },
+    "tipo_aco": {
+      "type": "string",
+      "description": "Ex.: SAE 1008/1010, GALV./ZINC., ESTRUTURAL"
+    },
+    "espessura_mm": {
+      "type": "number",
+      "description": "Espessura em mil\u00edmetros"
+    },
+    "peso_especifico": {
+      "type": "number",
+      "description": "Peso espec\u00edfico em kg/m (linear)"
+    },
+    "preco_kg": {
+      "type": "number",
+      "description": "Pre\u00e7o do a\u00e7o por kg (R$)"
+    }
+  },
+  "required": [
+    "codigo",
+    "aco_bitola",
+    "tipo_aco"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "name": "ComponenteComercial",
+  "type": "object",
+  "properties": {
+    "descricao": {
+      "type": "string",
+      "description": "Ex.: Paraf. \u00d8 5/16\"x 1\" c/ arruelas e porcas"
+    },
+    "unidade": {
+      "type": "string",
+      "description": "Ex.: un, p\u00e7, kg"
+    },
+    "custo_unitario": {
+      "type": "number",
+      "description": "Custo unit\u00e1rio em R$"
+    }
+  },
+  "required": [
+    "descricao"
+  ]
+}
