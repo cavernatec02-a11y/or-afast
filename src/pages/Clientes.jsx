@@ -1,56 +1,37 @@
 import React, { useEffect, useState } from "react";
 import { Plus, Trash2, Pencil, Search, Users } from "lucide-react";
-import { base44 } from "@/api/base44Client";
 import { toast } from "react-hot-toast";
 import Navbar from "@/components/Navbar";
+import { clientesStore } from "@/lib/localStore";
 
 const VAZIO = { nome: "", contato: "", telefone: "", fax: "", email: "", web_site: "", numero_projeto: "", numero_folha: "" };
 
 export default function Clientes() {
   const [lista, setLista] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [busca, setBusca] = useState("");
   const [editando, setEditando] = useState(null);
 
-  const carregar = async () => {
-    setLoading(true);
-    try {
-      setLista(await base44.entities.Cliente.list("-created_date", 100));
-    } catch (e) {
-      toast.error("Erro ao carregar clientes.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  const carregar = () => setLista(clientesStore.list());
   useEffect(() => { carregar(); }, []);
 
-  const salvar = async (item) => {
+  const salvar = (item) => {
     if (!item.nome) return toast.error("Informe o nome do cliente.");
-    try {
-      if (item.id) {
-        await base44.entities.Cliente.update(item.id, item);
-        toast.success("Cliente atualizado!");
-      } else {
-        await base44.entities.Cliente.create(item);
-        toast.success("Cliente cadastrado!");
-      }
-      setEditando(null);
-      carregar();
-    } catch (e) {
-      toast.error("Erro ao salvar cliente.");
+    if (item.id) {
+      clientesStore.update(item.id, item);
+      toast.success("Cliente atualizado!");
+    } else {
+      clientesStore.create(item);
+      toast.success("Cliente cadastrado!");
     }
+    setEditando(null);
+    carregar();
   };
 
-  const remover = async (id) => {
+  const remover = (id) => {
     if (!confirm("Excluir este cliente?")) return;
-    try {
-      await base44.entities.Cliente.delete(id);
-      carregar();
-      toast.success("Excluído.");
-    } catch (e) {
-      toast.error("Erro ao excluir.");
-    }
+    clientesStore.delete(id);
+    carregar();
+    toast.success("Excluído.");
   };
 
   const filtrados = lista.filter((c) =>
@@ -64,7 +45,7 @@ export default function Clientes() {
         <div className="flex flex-wrap items-end gap-4 mb-5">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Clientes</h1>
-            <p className="text-sm text-slate-500">Cadastre e edite clientes para usar nos orçamentos</p>
+            <p className="text-sm text-slate-500">Cadastro local de clientes — salvo no aparelho</p>
           </div>
           <button onClick={() => setEditando({ ...VAZIO })} className="ml-auto inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90">
             <Plus size={18} /> Novo cliente
@@ -78,9 +59,7 @@ export default function Clientes() {
           <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar cliente..." className="input pl-9" />
         </div>
 
-        {loading ? (
-          <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" /></div>
-        ) : filtrados.length === 0 ? (
+        {filtrados.length === 0 ? (
           <div className="text-center py-20">
             <div className="w-16 h-16 mx-auto rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mb-4"><Users size={28} /></div>
             <h3 className="text-lg font-semibold text-slate-900">Nenhum cliente cadastrado</h3>
@@ -93,7 +72,7 @@ export default function Clientes() {
                 <div className="flex items-start gap-2.5">
                   <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600"><Users size={18} /></div>
                   <div>
-                    <h3 className="font-semibold text-slate-900 leading-tight">{c.nome}</h3>
+                    <h3 className="font-semibold text-slate-900">{c.nome}</h3>
                     <p className="text-xs text-slate-500">{c.contato || "—"}</p>
                   </div>
                 </div>

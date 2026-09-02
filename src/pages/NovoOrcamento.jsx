@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Coins, Calculator, Package, User, FileText } from "lucide-react";
-import { base44 } from "@/api/base44Client";
 import { toast } from "react-hot-toast";
 import Navbar from "@/components/Navbar";
 import ClienteForm from "@/components/orcamento/ClienteForm";
@@ -11,21 +10,13 @@ import CustosAdicionais from "@/components/orcamento/CustosAdicionais";
 import FormacaoPreco from "@/components/orcamento/FormacaoPreco";
 import TotalizadorBar from "@/components/orcamento/TotalizadorBar";
 import { gerarPDFOrcamento } from "@/lib/pdfOrcamento";
+import { orcamentosStore, clientesStore, acoStore, catalogoStore } from "@/lib/localStore";
 import {
   calcTotaisOrcamento, calcCustoEmpresa, calcTotalCliente,
   calcCargaTributaria, calcPrecoVendaParaMargem, calcResultadoVenda, newUid,
 } from "@/lib/pricingEngine";
 
 const novoProduto = () => ({ uid: newUid(), tipo_produto: "", nome: "" });
-const stripComp = (c) => ({
-  produto_id: c.produto_id, nome: c.nome, quantidade: c.quantidade, corte: c.corte,
-  comprimento: c.comprimento, custo_aco_id: c.custo_aco_id, peso_especifico: c.peso_especifico,
-  peso_unit: c.peso_unit, peso_total: c.peso_total,
-});
-const stripCom = (c) => ({
-  produto_id: c.produto_id, descricao: c.descricao, unidade: c.unidade,
-  quantidade: c.quantidade, custo_unitario: c.custo_unitario, total: c.total,
-});
 
 export default function NovoOrcamento() {
   const { id } = useParams();
@@ -54,61 +45,46 @@ export default function NovoOrcamento() {
   const [valorVenda, setValorVenda] = useState(0);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const [acos, catalogo, cli] = await Promise.all([
-          base44.entities.CustoAco.list(),
-          base44.entities.ComponenteComercial.list(),
-          base44.entities.Cliente.list("-created_date", 200),
-        ]);
-        setAcoOptions(acos);
-        setCatalogoComercial(catalogo);
-        setClientes(cli);
-      } catch (e) {
-        toast.error("Erro ao carregar tabelas de custo.");
-      }
-    })();
-  }, []);
+    setAcoOptions(acoStore.list());
+    setCatalogoComercial(catalogoStore.list());
+    setClientes(clientesStore.list());
 
-  useEffect(() => {
     if (!id) {
       setProdutos([novoProduto()]);
       setLoading(false);
       return;
     }
-    (async () => {
-      try {
-        const orc = await base44.entities.Orcamento.get(id);
-        setForm({
-          titulo: orc.titulo || "", cliente_id: orc.cliente_id || "", cliente_nome: orc.cliente_nome || "",
-          contato: orc.contato || "", telefone: orc.telefone || "", email: orc.email || "",
-          numero_projeto: orc.numero_projeto || "", numero_folha: orc.numero_folha || "",
-          uf: orc.uf || "", data: orc.data || new Date().toISOString().slice(0, 10), validade_dias: orc.validade_dias ?? 15,
-        });
-        setProdutos((orc.produtos && orc.produtos.length ? orc.produtos : [novoProduto()]).map((p) => ({ uid: p.id || newUid(), tipo_produto: p.tipo_produto || "", nome: p.nome || "" })));
-        setComponentes((orc.componentes || []).map((c) => ({ ...c, uid: c.uid || newUid() })));
-        setComerciais((orc.componentes_comerciais || []).map((c) => ({ ...c, uid: c.uid || newUid() })));
-        setPrecoAcoKg(orc.preco_aco_kg ?? 15);
-        setMontagem(orc.montagem ?? 0);
-        setFrete(orc.frete ?? 0);
-        setCobrarMontagem(!!orc.cobrar_montagem);
-        setCobrarFrete(!!orc.cobrar_frete);
-        setComissao(orc.comissao_percentual ?? 0);
-        setMargemMinima(orc.margem_minima ?? 15);
-        setMargemAdequada(orc.margem_adequada ?? 30);
-        setValorVenda(orc.valor_venda ?? 0);
-      } catch (e) {
-        toast.error("Orçamento não encontrado.");
-        navigate("/");
-      } finally {
-        setLoading(false);
-      }
-    })();
+    const orc = orcamentosStore.get(id);
+    if (!orc) {
+      toast.error("Orçamento não encontrado.");
+      navigate("/");
+      return;
+    }
+    setForm({
+      titulo: orc.titulo || "", cliente_id: orc.cliente_id || "", cliente_nome: orc.cliente_nome || "",
+      contato: orc.contato || "", telefone: orc.telefone || "", email: orc.email || "",
+      numero_projeto: orc.numero_projeto || "", numero_folha: orc.numero_folha || "",
+      uf: orc.uf || "", data: orc.data || new Date().toISOString().slice(0, 10),
+      validade_dias: orc.validade_dias ?? 15,
+    });
+    const prods = orc.produtos && orc.produtos.length ? orc.produtos : [novoProduto()];
+    setProdutos(prods.map((p) => ({ uid: p.id || newUid(), tipo_produto: p.tipo_produto || "", nome: p.nome || "" })));
+    setComponentes((orc.componentes || []).map((c) => ({ ...c, uid: c.uid || newUid() })));
+    setComerciais((orc.componentes_comerciais || []).map((c) => ({ ...c, uid: c.uid || newUid() })));
+    setPrecoAcoKg(orc.preco_aco_kg ?? 15);
+    setMontagem(orc.montagem ?? 0);
+    setFrete(orc.frete ?? 0);
+    setCobrarMontagem(!!orc.cobrar_montagem);
+    setCobrarFrete(!!orc.cobrar_frete);
+    setComissao(orc.comissao_percentual ?? 0);
+    setMargemMinima(orc.margem_minima ?? 15);
+    setMargemAdequada(orc.margem_adequada ?? 30);
+    setValorVenda(orc.valor_venda ?? 0);
+    setLoading(false);
   }, [id]);
 
-  const onSelectCliente = (c) => {
+  const onSelectCliente = (c) =>
     setForm((f) => ({ ...f, cliente_id: c.id, cliente_nome: c.nome, contato: c.contato || "", telefone: c.telefone || "", email: c.email || "" }));
-  };
 
   const totais = useMemo(() => calcTotaisOrcamento(componentes, comerciais, precoAcoKg), [componentes, comerciais, precoAcoKg]);
   const custoEmpresa = useMemo(
@@ -126,46 +102,39 @@ export default function NovoOrcamento() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [custoEmpresa]);
 
-  const salvar = async () => {
-    if (!form.titulo) {
-      toast.error("Informe um título para o orçamento.");
-      return;
-    }
-    const produtosValidos = produtos.filter((p) => p.tipo_produto || componentes.some((c) => c.produto_id === p.uid) || comerciais.some((c) => c.produto_id === p.uid));
-    if (produtosValidos.length === 0) {
-      toast.error("Adicione ao menos um produto com peças.");
-      return;
-    }
+  const buildPayload = () => ({
+    ...form,
+    produtos: produtos.map((p) => ({ id: p.uid, tipo_produto: p.tipo_produto, nome: p.nome })),
+    componentes: componentes.map(({ uid, ...c }) => c),
+    componentes_comerciais: comerciais.map(({ uid, ...c }) => c),
+    preco_aco_kg: precoAcoKg,
+    peso_total_aco: totais.peso_total_aco,
+    custo_total_aco: totais.custo_total_aco,
+    custo_acessorios: totais.custo_acessorios,
+    montagem, cobrar_montagem: cobrarMontagem,
+    frete, cobrar_frete: cobrarFrete,
+    comissao_percentual: comissao,
+    margem_minima: margemMinima,
+    margem_adequada: margemAdequada,
+    valor_venda: valorVenda,
+    custo_empresa: custoEmpresa,
+    total_cliente: totalCliente,
+    carga_tributaria: carga.total,
+    impostos_valor: resultado.impostos,
+    comissao_valor: resultado.comissao,
+    margem_real: resultado.margem,
+    lucro_real: resultado.lucro,
+  });
+
+  const salvar = () => {
+    if (!form.titulo) { toast.error("Informe um título para o orçamento."); return; }
     setSaving(true);
-    const payload = {
-      ...form,
-      produtos: produtosValidos.map((p) => ({ id: p.uid, tipo_produto: p.tipo_produto, nome: p.nome })),
-      componentes: componentes.map(stripComp),
-      componentes_comerciais: comerciais.map(stripCom),
-      preco_aco_kg: precoAcoKg,
-      peso_total_aco: totais.peso_total_aco,
-      custo_total_aco: totais.custo_total_aco,
-      custo_acessorios: totais.custo_acessorios,
-      montagem, cobrar_montagem: cobrarMontagem,
-      frete, cobrar_frete: cobrarFrete,
-      comissao_percentual: comissao,
-      margem_minima: margemMinima,
-      margem_adequada: margemAdequada,
-      valor_venda: valorVenda,
-      custo_empresa: custoEmpresa,
-      total_cliente: totalCliente,
-      carga_tributaria: carga.total,
-      impostos_valor: resultado.impostos,
-      comissao_valor: resultado.comissao,
-      margem_real: resultado.margem,
-      lucro_real: resultado.lucro,
-    };
     try {
       if (id) {
-        await base44.entities.Orcamento.update(id, payload);
+        orcamentosStore.update(id, buildPayload());
         toast.success("Orçamento atualizado!");
       } else {
-        await base44.entities.Orcamento.create(payload);
+        orcamentosStore.create(buildPayload());
         toast.success("Orçamento salvo!");
       }
       navigate("/");
@@ -176,24 +145,9 @@ export default function NovoOrcamento() {
     }
   };
 
-  const gerarPDF = () => {
-    if (!valorVenda) {
-      toast.error("Defina o valor de venda antes de gerar o PDF.");
-      return;
-    }
-    gerarPDFOrcamento({
-      ...form,
-      produtos: produtos.map((p) => ({ id: p.uid, tipo_produto: p.tipo_produto, nome: p.nome })),
-      componentes: componentes.map(stripComp),
-      componentes_comerciais: comerciais.map(stripCom),
-      preco_aco_kg: precoAcoKg,
-      peso_total_aco: totais.peso_total_aco,
-      custo_total_aco: totais.custo_total_aco,
-      custo_acessorios: totais.custo_acessorios,
-      montagem, cobrar_montagem: cobrarMontagem,
-      frete, cobrar_frete: cobrarFrete,
-      valor_venda: valorVenda, total_cliente: totalCliente,
-    });
+  const gerarPDF = async () => {
+    if (!valorVenda) { toast.error("Defina o valor de venda antes de gerar o PDF."); return; }
+    await gerarPDFOrcamento(buildPayload());
   };
 
   if (loading) {
