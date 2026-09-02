@@ -8,7 +8,6 @@ export function gerarPDFOrcamento(orc) {
   const W = 180;
   let y = 30;
 
-  // Cabeçalho
   doc.setFillColor(15, 23, 42);
   doc.rect(0, 0, 210, 22, "F");
   doc.setTextColor(255, 255, 255);
@@ -29,7 +28,6 @@ export function gerarPDFOrcamento(orc) {
   doc.text(`Nº Projeto: ${orc.numero_projeto || "—"}    Folha: ${orc.numero_folha || "—"}    Data: ${fmtData(orc.data)}`, M, y);
   y += 8;
 
-  // Dados do cliente
   doc.setDrawColor(226, 232, 240);
   doc.setFillColor(248, 250, 252);
   doc.roundedRect(M, y, W, 22, 2, 2, "FD");
@@ -42,24 +40,24 @@ export function gerarPDFOrcamento(orc) {
   doc.text(`E-mail: ${orc.email || "—"}    UF: ${orc.uf || "—"}`, M + 3, y + 20);
   y += 28;
 
-  // Peças estruturais
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.text("Peças Estruturais", M, y);
-  y += 4;
-  y = drawTable(doc, y, ["Descrição", "Qtde", "Peso Total (kg)"], [110, 25, 45],
-    (orc.componentes || []).map((c) => [c.nome || "—", String(c.quantidade ?? 0), formatPeso(c.peso_total)]));
-
-  // Componentes comerciais
-  if ((orc.componentes_comerciais || []).length) {
-    y += 4;
+  // Cada produto vira um bloco
+  (orc.produtos || []).forEach((prod, pi) => {
+    y = ensureSpace(doc, y, 16);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.text("Componentes Comerciais", M, y);
+    doc.setFontSize(11);
+    doc.setTextColor(15, 23, 42);
+    doc.text(`Produto ${pi + 1}: ${prod.nome || prod.tipo_produto || "—"}`, M, y);
+    y += 5;
+    y = drawTable(doc, y, ["Descrição", "Qtde", "Peso Total (kg)"], [110, 25, 45],
+      (prod.componentes || []).map((c) => [c.nome || "—", String(c.quantidade ?? 0), formatPeso(c.peso_total)]));
+
+    if ((prod.componentes_comerciais || []).length) {
+      y += 3;
+      y = drawTable(doc, y, ["Componente", "Qtde", "Un.", "Valor (R$)"], [100, 20, 20, 40],
+        prod.componentes_comerciais.map((c) => [c.descricao || "—", String(c.quantidade ?? 0), c.unidade || "un", formatMoeda(c.total)]));
+    }
     y += 4;
-    y = drawTable(doc, y, ["Descrição", "Qtde", "Un.", "Valor (R$)"], [100, 20, 20, 40],
-      orc.componentes_comerciais.map((c) => [c.descricao || "—", String(c.quantidade ?? 0), c.unidade || "un", formatMoeda(c.total)]));
-  }
+  });
 
   // Resumo financeiro
   const linhas = [
@@ -71,7 +69,7 @@ export function gerarPDFOrcamento(orc) {
 
   const boxH = 14 + linhas.length * 5 + 10;
   y = ensureSpace(doc, y, boxH);
-  y += 4;
+  y += 2;
   doc.setFillColor(248, 250, 252);
   doc.roundedRect(M, y, W, boxH, 2, 2, "FD");
   doc.setFont("helvetica", "bold");
@@ -80,11 +78,7 @@ export function gerarPDFOrcamento(orc) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   let ry = y + 12;
-  linhas.forEach(([l, v]) => {
-    doc.text(l, M + 3, ry);
-    doc.text(v, M + W - 3, ry, { align: "right" });
-    ry += 5;
-  });
+  linhas.forEach(([l, v]) => { doc.text(l, M + 3, ry); doc.text(v, M + W - 3, ry, { align: "right" }); ry += 5; });
   doc.setDrawColor(203, 213, 225);
   doc.line(M + 3, ry, M + W - 3, ry);
   ry += 5;
@@ -94,7 +88,6 @@ export function gerarPDFOrcamento(orc) {
   doc.text(formatMoeda(orc.total_cliente), M + W - 3, ry, { align: "right" });
   y += boxH + 4;
 
-  // Rodapé
   y = ensureSpace(doc, y, 22);
   doc.setFont("helvetica", "italic");
   doc.setFontSize(8);

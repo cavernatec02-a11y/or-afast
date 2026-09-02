@@ -48,6 +48,7 @@ export default function Orcamentos() {
             <p className="text-sm text-slate-500">Orçamentação industrial de estruturas de armazenagem</p>
           </div>
           <div className="ml-auto flex items-center gap-3">
+            <Link to="/clientes" className="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100">Clientes</Link>
             <Link to="/tabela-aco" className="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100">Tabela de Aço</Link>
             <Link to="/novo-orcamento" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition">
               <Plus size={18} /> Novo orçamento
@@ -77,7 +78,7 @@ export default function Orcamentos() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-slate-900 leading-tight">{o.titulo}</h3>
-                      <p className="text-xs text-slate-500">{o.tipo_produto}</p>
+                      <p className="text-xs text-slate-500">{(o.produtos || []).map((p) => p.tipo_produto || p.nome).filter(Boolean).join(", ") || "—"}</p>
                     </div>
                   </div>
                   <StatusBadge status={o.status} />

@@ -1,5 +1,6 @@
 import React from "react";
 import { FileDown, Save } from "lucide-react";
+import NumberInput from "@/components/NumberInput";
 import { formatMoeda, formatPeso, statusMargem } from "@/lib/pricingEngine";
 
 export default function TotalizadorBar({
@@ -22,10 +23,7 @@ export default function TotalizadorBar({
 
         <label className="flex items-center gap-2">
           <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Valor de Venda</span>
-          <div className="flex items-center gap-1">
-            <span className="text-sm text-slate-400">R$</span>
-            <input type="number" step="0.01" value={valorVenda ?? 0} onChange={(e) => setValorVenda(Number(e.target.value))} className="input-sm w-36 text-right font-bold text-slate-900" />
-          </div>
+          <NumberInput value={valorVenda ?? 0} onChange={setValorVenda} prefix="R$" className="input-sm w-36 text-right font-bold text-slate-900" />
         </label>
 
         <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${badge}`}>
@@ -49,11 +47,11 @@ export default function TotalizadorBar({
 }
 
 function Stat({ label, value, tone, highlight }) {
-  const toneClass = tone === "emerald" ? "text-emerald-700" : tone === "red" ? "text-red-700" : highlight ? "text-slate-900" : "text-slate-700";
+  const toneClass = tone === "emerald" ? "text-emerald-700" : tone === "red" ? "text-red-700" : "text-slate-700";
   return (
     <div>
       <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</div>
-      <div className={`text-base font-semibold tabular-nums ${toneClass} ${highlight ? "text-base" : ""}`}>{value}</div>
+      <div className={`text-base font-semibold tabular-nums ${toneClass} ${highlight ? "text-slate-900" : ""}`}>{value}</div>
     </div>
   );
 }

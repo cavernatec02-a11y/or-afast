@@ -33,7 +33,7 @@ export default function FormacaoPreco({
           <Line label="Montagem" value={cobrarMontagem ? "Repassada ao cliente" : formatMoeda(montagem)} />
           <Line label="Frete" value={cobrarFrete ? "Repassado ao cliente" : formatMoeda(frete)} />
           <div className="border-t border-slate-200 my-2" />
-          <Line label="Custo da Empresa (base margem)" value={formatMoeda(custoEmpresa)} strong />
+          <Line label="Custo da Empresa (base da margem)" value={formatMoeda(custoEmpresa)} strong />
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-5">
@@ -54,7 +54,7 @@ export default function FormacaoPreco({
 
       <div className="rounded-xl border border-slate-200 bg-white p-5">
         <h3 className="text-sm font-semibold text-slate-900 mb-1 flex items-center gap-2"><Receipt size={16} className="text-slate-500" /> Sugestão de Preço de Venda</h3>
-        <p className="text-xs text-slate-500 mb-3">Preço de venda = Custo da empresa ÷ (1 − Margem − Carga Tributária − Comissão). Use como referência e ajuste na barra inferior.</p>
+        <p className="text-xs text-slate-500 mb-3">Preço de venda = Custo da empresa ÷ (1 − Margem − Carga Tributária − Comissão). Use como referência e ajuste o valor na barra inferior.</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <SuggestionCard tone="amber" label={`Preço Mínimo (margem ${margemMinima}%)`} value={formatMoeda(precoMinimo)} onUse={() => onUsarPreco(precoMinimo)} />
           <SuggestionCard tone="emerald" label={`Preço Adequado (margem ${margemAdequada}%)`} value={formatMoeda(precoAdequado)} onUse={() => onUsarPreco(precoAdequado)} />

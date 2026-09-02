@@ -1,21 +1,21 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Layers, Boxes, Calculator, Coins } from "lucide-react";
+import { ArrowLeft, Coins, Calculator, Package, User, FileText } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "react-hot-toast";
 import ClienteForm from "@/components/orcamento/ClienteForm";
-import ComponenteGrid from "@/components/orcamento/ComponenteGrid";
-import ComponenteComercialGrid from "@/components/orcamento/ComponenteComercialGrid";
+import ProdutosSection from "@/components/orcamento/ProdutosSection";
 import CustoAcoCard from "@/components/orcamento/CustoAcoCard";
 import CustosAdicionais from "@/components/orcamento/CustosAdicionais";
 import FormacaoPreco from "@/components/orcamento/FormacaoPreco";
 import TotalizadorBar from "@/components/orcamento/TotalizadorBar";
 import { gerarPDFOrcamento } from "@/lib/pdfOrcamento";
 import {
-  PRODUTO_PRESETS, ICMS_POR_UF, recalcComponente,
-  calcTotais, calcCustoAco, calcCustoEmpresa, calcTotalCliente,
-  calcCargaTributaria, calcPrecoVendaParaMargem, calcResultadoVenda,
+  calcTotaisOrcamento, calcCustoEmpresa, calcTotalCliente,
+  calcCargaTributaria, calcPrecoVendaParaMargem, calcResultadoVenda, newUid,
 } from "@/lib/pricingEngine";
+
+const novoProduto = () => ({ uid: newUid(), tipo_produto: "", nome: "", componentes: [], componentes_comerciais: [] });
 
 export default function NovoOrcamento() {
   const { id } = useParams();
@@ -24,14 +24,13 @@ export default function NovoOrcamento() {
   const [saving, setSaving] = useState(false);
   const [acoOptions, setAcoOptions] = useState([]);
   const [catalogoComercial, setCatalogoComercial] = useState([]);
+  const [clientes, setClientes] = useState([]);
 
   const [form, setForm] = useState({
-    titulo: "", cliente_nome: "", contato: "", telefone: "", email: "",
-    numero_projeto: "", numero_folha: "", uf: "", data: new Date().toISOString().slice(0, 10),
-    tipo_produto: "", validade_dias: 15,
+    titulo: "", cliente_id: "", cliente_nome: "", contato: "", telefone: "", email: "",
+    numero_projeto: "", numero_folha: "", uf: "", data: new Date().toISOString().slice(0, 10), validade_dias: 15,
   });
-  const [componentes, setComponentes] = useState([]);
-  const [comerciais, setComerciais] = useState([]);
+  const [produtos, setProdutos] = useState([]);
   const [precoAcoKg, setPrecoAcoKg] = useState(15);
   const [montagem, setMontagem] = useState(0);
   const [frete, setFrete] = useState(0);
@@ -45,12 +44,14 @@ export default function NovoOrcamento() {
   useEffect(() => {
     (async () => {
       try {
-        const [acos, catalogo] = await Promise.all([
+        const [acos, catalogo, cli] = await Promise.all([
           base44.entities.CustoAco.list(),
           base44.entities.ComponenteComercial.list(),
+          base44.entities.Cliente.list("-created_date", 200),
         ]);
         setAcoOptions(acos);
         setCatalogoComercial(catalogo);
+        setClientes(cli);
       } catch (e) {
         toast.error("Erro ao carregar tabelas de custo.");
       }
@@ -58,18 +59,28 @@ export default function NovoOrcamento() {
   }, []);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id) {
+      setProdutos([novoProduto()]);
+      setLoading(false);
+      return;
+    }
     (async () => {
       try {
         const orc = await base44.entities.Orcamento.get(id);
         setForm({
-          titulo: orc.titulo || "", cliente_nome: orc.cliente_nome || "", contato: orc.contato || "",
-          telefone: orc.telefone || "", email: orc.email || "", numero_projeto: orc.numero_projeto || "",
-          numero_folha: orc.numero_folha || "", uf: orc.uf || "", data: orc.data || new Date().toISOString().slice(0, 10),
-          tipo_produto: orc.tipo_produto || "", validade_dias: orc.validade_dias ?? 15,
+          titulo: orc.titulo || "", cliente_id: orc.cliente_id || "", cliente_nome: orc.cliente_nome || "",
+          contato: orc.contato || "", telefone: orc.telefone || "", email: orc.email || "",
+          numero_projeto: orc.numero_projeto || "", numero_folha: orc.numero_folha || "",
+          uf: orc.uf || "", data: orc.data || new Date().toISOString().slice(0, 10), validade_dias: orc.validade_dias ?? 15,
         });
-        setComponentes(orc.componentes || []);
-        setComerciais(orc.componentes_comerciais || []);
+        // Garante uid em todos os componentes para keys estáveis
+        const produtosComUid = (orc.produtos && orc.produtos.length ? orc.produtos : [novoProduto()]).map((p) => ({
+          ...p,
+          uid: p.uid || newUid(),
+          componentes: (p.componentes || []).map((c) => ({ ...c, uid: c.uid || newUid() })),
+          componentes_comerciais: (p.componentes_comerciais || []).map((c) => ({ ...c, uid: c.uid || newUid() })),
+        }));
+        setProdutos(produtosComUid);
         setPrecoAcoKg(orc.preco_aco_kg ?? 15);
         setMontagem(orc.montagem ?? 0);
         setFrete(orc.frete ?? 0);
@@ -88,24 +99,17 @@ export default function NovoOrcamento() {
     })();
   }, [id]);
 
-  const aplicarPreset = (tipo) => {
-    if (id) return;
-    const preset = PRODUTO_PRESETS[tipo];
-    if (!preset) return;
-    setComponentes(preset.map((p) => recalcComponente({ ...p, custo_aco_id: "", peso_especifico: 0 })));
-    if (!form.titulo) setForm((f) => ({ ...f, titulo: `${tipo} — ${f.cliente_nome || "Novo orçamento"}` }));
+  const onSelectCliente = (c) => {
+    setForm((f) => ({
+      ...f,
+      cliente_id: c.id, cliente_nome: c.nome, contato: c.contato || "", telefone: c.telefone || "", email: c.email || "",
+    }));
   };
 
-  const onFormChange = (next) => {
-    if (next.tipo_produto && next.tipo_produto !== form.tipo_produto) aplicarPreset(next.tipo_produto);
-    setForm(next);
-  };
-
-  const totais = useMemo(() => calcTotais(componentes, comerciais), [componentes, comerciais]);
-  const custoAco = useMemo(() => calcCustoAco(totais.peso_total_aco, precoAcoKg), [totais.peso_total_aco, precoAcoKg]);
+  const totais = useMemo(() => calcTotaisOrcamento(produtos, precoAcoKg), [produtos, precoAcoKg]);
   const custoEmpresa = useMemo(
-    () => calcCustoEmpresa(custoAco, totais.custo_acessorios, montagem, frete, cobrarMontagem, cobrarFrete),
-    [custoAco, totais.custo_acessorios, montagem, frete, cobrarMontagem, cobrarFrete]
+    () => calcCustoEmpresa(totais.custo_total_aco, totais.custo_acessorios, montagem, frete, cobrarMontagem, cobrarFrete),
+    [totais, montagem, frete, cobrarMontagem, cobrarFrete]
   );
   const carga = useMemo(() => calcCargaTributaria(form.uf), [form.uf]);
   const resultado = useMemo(
@@ -132,19 +136,22 @@ export default function NovoOrcamento() {
   }, [custoEmpresa]);
 
   const salvar = async () => {
-    if (!form.titulo || !form.tipo_produto) {
-      toast.error("Informe título e tipo de produto.");
+    if (!form.titulo) {
+      toast.error("Informe um título para o orçamento.");
+      return;
+    }
+    const produtosValidos = produtos.filter((p) => (p.componentes && p.componentes.length > 0) || (p.componentes_comerciais && p.componentes_comerciais.length > 0) || p.tipo_produto);
+    if (produtosValidos.length === 0) {
+      toast.error("Adicione ao menos um produto com peças.");
       return;
     }
     setSaving(true);
-    const componentesComCusto = componentes.map((c) => ({ ...c, custo: (c.peso_total || 0) * precoAcoKg, preco_kg: precoAcoKg }));
     const payload = {
       ...form,
-      componentes: componentesComCusto,
-      componentes_comerciais: comerciais,
+      produtos: produtosValidos,
       preco_aco_kg: precoAcoKg,
       peso_total_aco: totais.peso_total_aco,
-      custo_total_aco: custoAco,
+      custo_total_aco: totais.custo_total_aco,
       custo_acessorios: totais.custo_acessorios,
       montagem, cobrar_montagem: cobrarMontagem,
       frete, cobrar_frete: cobrarFrete,
@@ -183,15 +190,13 @@ export default function NovoOrcamento() {
     }
     gerarPDFOrcamento({
       ...form,
-      componentes, componentes_comerciais: comerciais,
-      preco_aco_kg: precoAcoKg,
+      produtos, preco_aco_kg: precoAcoKg,
       peso_total_aco: totais.peso_total_aco,
-      custo_total_aco: custoAco,
+      custo_total_aco: totais.custo_total_aco,
       custo_acessorios: totais.custo_acessorios,
       montagem, cobrar_montagem: cobrarMontagem,
       frete, cobrar_frete: cobrarFrete,
-      valor_venda: valorVenda,
-      total_cliente: totalCliente,
+      valor_venda: valorVenda, total_cliente: totalCliente,
     });
   };
 
@@ -206,33 +211,27 @@ export default function NovoOrcamento() {
           <button onClick={() => navigate("/")} className="p-2 rounded-lg text-slate-500 hover:bg-slate-100"><ArrowLeft size={20} /></button>
           <div>
             <h1 className="text-lg font-semibold text-slate-900">{id ? "Editar orçamento" : "Novo orçamento"}</h1>
-            <p className="text-sm text-slate-500">Dados do cliente, peças e formação de preço</p>
+            <p className="text-sm text-slate-500">Cliente, produtos e formação de preço</p>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        <section className="bg-white rounded-2xl border border-slate-200 p-5">
-          <ClienteForm form={form} onChange={onFormChange} />
-        </section>
+        <Section n="1" icon={<User size={18} />} title="Cliente" subtitle="Selecione um cliente cadastrado ou preencha manualmente.">
+          <div className="bg-white rounded-2xl border border-slate-200 p-5">
+            <ClienteForm form={form} onChange={setForm} clientes={clientes} onSelectCliente={onSelectCliente} />
+          </div>
+        </Section>
 
-        <section>
-          <SectionTitle icon={<Layers size={18} />} title="Peças estruturais" subtitle="Corte × Comprimento × Peso específico = Peso. Selecione a chapa para o peso; o custo vem do preço do aço abaixo." />
-          <ComponenteGrid componentes={componentes} acoOptions={acoOptions} precoKg={precoAcoKg} onChange={setComponentes} />
-        </section>
+        <Section n="2" icon={<Package size={18} />} title="Produtos do orçamento" subtitle="Adicione um ou mais produtos (ex.: porta-palete + estante) para o mesmo cliente.">
+          <ProdutosSection produtos={produtos} acoOptions={acoOptions} catalogoComercial={catalogoComercial} precoKg={precoAcoKg} onChange={setProdutos} />
+        </Section>
 
-        <section>
-          <SectionTitle icon={<Coins size={18} />} title="Custo do Aço" subtitle="Informe o preço de mercado do aço (R$/kg). O sistema calcula peso total × preço." />
-          <CustoAcoCard pesoTotal={totais.peso_total_aco} precoKg={precoAcoKg} setPrecoKg={setPrecoAcoKg} custoAco={custoAco} />
-        </section>
+        <Section n="3" icon={<Coins size={18} />} title="Custo do Aço" subtitle="Informe o preço de mercado do aço (R$/kg). O sistema calcula peso total × preço.">
+          <CustoAcoCard pesoTotal={totais.peso_total_aco} precoKg={precoAcoKg} setPrecoKg={setPrecoAcoKg} custoAco={totais.custo_total_aco} />
+        </Section>
 
-        <section>
-          <SectionTitle icon={<Boxes size={18} />} title="Componentes comerciais" subtitle="Parafusos, chumbadores e fixadores terceirizados." />
-          <ComponenteComercialGrid componentes={comerciais} catalogo={catalogoComercial} onChange={setComerciais} />
-        </section>
-
-        <section>
-          <SectionTitle icon={<Calculator size={18} />} title="Custos adicionais" subtitle="Montagem e frete (marque se o cliente paga), comissão e metas de margem." />
+        <Section n="4" icon={<Calculator size={18} />} title="Custos adicionais" subtitle="Montagem e frete (marque se o cliente paga), comissão e metas de margem.">
           <CustosAdicionais
             montagem={montagem} setMontagem={setMontagem} cobrarMontagem={cobrarMontagem} setCobrarMontagem={setCobrarMontagem}
             frete={frete} setFrete={setFrete} cobrarFrete={cobrarFrete} setCobrarFrete={setCobrarFrete}
@@ -241,12 +240,11 @@ export default function NovoOrcamento() {
             margemAdequada={margemAdequada} setMargemAdequada={setMargemAdequada}
             comissaoValor={resultado.comissao}
           />
-        </section>
+        </Section>
 
-        <section>
-          <SectionTitle icon={<Calculator size={18} />} title="Formação de preço" subtitle="Tributos do Lucro Presumido, margem real e sugestão de preço de venda." />
+        <Section n="5" icon={<FileText size={18} />} title="Formação de preço" subtitle="Tributos do Lucro Presumido, margem real e sugestão de preço de venda.">
           <FormacaoPreco
-            custoAco={custoAco} custoAcessorios={totais.custo_acessorios}
+            custoAco={totais.custo_total_aco} custoAcessorios={totais.custo_acessorios}
             montagem={montagem} frete={frete} cobrarMontagem={cobrarMontagem} cobrarFrete={cobrarFrete}
             custoEmpresa={custoEmpresa} totalCliente={totalCliente}
             carga={carga} comissaoPct={comissao} comissaoValor={resultado.comissao} impostosValor={resultado.impostos}
@@ -254,7 +252,7 @@ export default function NovoOrcamento() {
             precoMinimo={precoMinimo} precoAdequado={precoAdequado}
             onUsarPreco={(v) => setValorVenda(Number(v.toFixed(2)))}
           />
-        </section>
+        </Section>
       </main>
 
       <TotalizadorBar
@@ -270,14 +268,20 @@ export default function NovoOrcamento() {
   );
 }
 
-function SectionTitle({ icon, title, subtitle }) {
+function Section({ n, icon, title, subtitle, children }) {
   return (
-    <div className="flex items-center gap-2.5 mb-3">
-      <div className="text-slate-700">{icon}</div>
-      <div>
-        <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-        <p className="text-xs text-slate-500">{subtitle}</p>
+    <section>
+      <div className="flex items-center gap-3 mb-3">
+        <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center font-bold text-sm shrink-0">{n}</div>
+        <div className="flex items-center gap-2">
+          <span className="text-slate-700">{icon}</span>
+          <div>
+            <h2 className="text-base font-semibold text-slate-900">{title}</h2>
+            <p className="text-xs text-slate-500">{subtitle}</p>
+          </div>
+        </div>
       </div>
-    </div>
+      {children}
+    </section>
   );
 }

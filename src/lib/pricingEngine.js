@@ -1,8 +1,7 @@
-// Motor de cálculo do OrçaFast — replica a matemática da planilha "Orçamento (padrão 2026)"
-// e adiciona formação de preço completa para empresa no regime de Lucro Presumido.
-// Nenhum valor é arredondado precocemente; arredondamentos só na exibição.
+// Motor de cálculo do OrçaFast — orçamentação industrial de estruturas de armazenagem.
+// Regime: Lucro Presumido (venda de produtos, base de presunção 8%).
 
-// ICMS interestadual por UF (aba "custo", colunas P/Q)
+// ICMS interestadual por UF
 export const ICMS_POR_UF = {
   AC: 0.07, AL: 0.07, AP: 0.07, AM: 0.07, BA: 0.07, CE: 0.07,
   ES: 0.07, GO: 0.07, MA: 0.07, MT: 0.07, MS: 0.07, PA: 0.07,
@@ -12,7 +11,6 @@ export const ICMS_POR_UF = {
 };
 export const UFS = Object.keys(ICMS_POR_UF).sort();
 
-// Regime: Lucro Presumido — venda de produtos (comércio/indústria). Base de presunção: 8%.
 export const LUCRO_PRESUMIDO = {
   pis: 0.0065, cofins: 0.03, csll: 0.0072, irpj: 0.012, irpj_adicional: 0.004,
 };
@@ -83,7 +81,11 @@ export const PRODUTO_PRESETS = {
 };
 export const TIPOS_PRODUTO = Object.keys(PRODUTO_PRESETS);
 
-// Cálculos de peso (geometria) — o custo vem do preço global do aço (R$/kg), não por chapa.
+// UID estável para keys de React (evita inputs com estado local trocado de linha)
+let _uid = 0;
+export function newUid() { _uid += 1; return `uid_${Date.now().toString(36)}_${_uid.toString(36)}`; }
+
+// Cálculos de peso (geometria). O custo vem do preço global do aço (R$/kg).
 export function calcPesoUnit(corte, comprimento, pesoEspecifico) {
   return (Number(corte) || 0) * (Number(comprimento) || 0) * (Number(pesoEspecifico) || 0);
 }
@@ -99,25 +101,36 @@ export function recalcComercial(comp) {
   const total = (Number(comp.quantidade) || 0) * (Number(comp.custo_unitario) || 0);
   return { ...comp, total };
 }
-export function calcTotais(componentes, componentesComerciais) {
-  const peso_total_aco = (componentes || []).reduce((s, c) => s + (Number(c.peso_total) || 0), 0);
-  const custo_acessorios = (componentesComerciais || []).reduce((s, c) => s + (Number(c.total) || 0), 0);
-  return { peso_total_aco, custo_acessorios };
+
+// Totais de um único produto
+export function calcProdutoTotais(produto, precoKg) {
+  const peso = (produto?.componentes || []).reduce((s, c) => s + (Number(c.peso_total) || 0), 0);
+  const custoAco = peso * (Number(precoKg) || 0);
+  const custoAcessorios = (produto?.componentes_comerciais || []).reduce((s, c) => s + (Number(c.total) || 0), 0);
+  return { peso, custoAco, custoAcessorios };
 }
 
-// Custo do aço = peso total × preço do kg do aço (preço de mercado, informado pelo usuário)
-export function calcCustoAco(pesoTotal, precoKg) {
-  return (Number(pesoTotal) || 0) * (Number(precoKg) || 0);
+// Totais do orçamento inteiro (somando todos os produtos)
+export function calcTotaisOrcamento(produtos, precoKg) {
+  let peso_total_aco = 0;
+  let custo_acessorios = 0;
+  (produtos || []).forEach((p) => {
+    const t = calcProdutoTotais(p, precoKg);
+    peso_total_aco += t.peso;
+    custo_acessorios += t.custoAcessorios;
+  });
+  const custo_total_aco = peso_total_aco * (Number(precoKg) || 0);
+  return { peso_total_aco, custo_total_aco, custo_acessorios };
 }
 
-// Custo da empresa (base para margem): aço + acessórios + montagem/frete ABSORVIDOS (não cobrados do cliente)
+// Custo da empresa (base para margem): aço + acessórios + montagem/frete ABSORVIDOS
 export function calcCustoEmpresa(custoAco, custoAcessorios, montagem, frete, cobrarMontagem, cobrarFrete) {
   const m = cobrarMontagem ? 0 : (Number(montagem) || 0);
   const f = cobrarFrete ? 0 : (Number(frete) || 0);
   return (Number(custoAco) || 0) + (Number(custoAcessorios) || 0) + m + f;
 }
 
-// Total que o cliente paga = valor de venda + montagem/frete repassados (cobrados do cliente)
+// Total que o cliente paga = valor de venda + montagem/frete repassados
 export function calcTotalCliente(valorVenda, montagem, frete, cobrarMontagem, cobrarFrete) {
   const m = cobrarMontagem ? (Number(montagem) || 0) : 0;
   const f = cobrarFrete ? (Number(frete) || 0) : 0;
