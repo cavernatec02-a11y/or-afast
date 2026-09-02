@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, Pencil, Search, Users } from "lucide-react";
+import { Plus, Trash2, Pencil, Search, Users } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "react-hot-toast";
+import Navbar from "@/components/Navbar";
 
 const VAZIO = { nome: "", contato: "", telefone: "", fax: "", email: "", web_site: "", numero_projeto: "", numero_folha: "" };
 
@@ -59,20 +59,18 @@ export default function Clientes() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-3">
-          <Link to="/" className="p-2 rounded-lg text-slate-500 hover:bg-slate-100"><ArrowLeft size={20} /></Link>
+      <Navbar />
+      <main className="max-w-7xl mx-auto px-4 py-6">
+        <div className="flex flex-wrap items-end gap-4 mb-5">
           <div>
-            <h1 className="text-lg font-semibold text-slate-900">Clientes</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Clientes</h1>
             <p className="text-sm text-slate-500">Cadastre e edite clientes para usar nos orçamentos</p>
           </div>
-          <button onClick={() => setEditando({ ...VAZIO })} className="ml-auto inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800">
+          <button onClick={() => setEditando({ ...VAZIO })} className="ml-auto inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90">
             <Plus size={18} /> Novo cliente
           </button>
         </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-6">
         {editando && <ClienteForm item={editando} onCancel={() => setEditando(null)} onSave={salvar} />}
 
         <div className="relative mb-5 max-w-sm">
@@ -92,13 +90,11 @@ export default function Clientes() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtrados.map((c) => (
               <div key={c.id} className="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-md transition">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600"><Users size={18} /></div>
-                    <div>
-                      <h3 className="font-semibold text-slate-900 leading-tight">{c.nome}</h3>
-                      <p className="text-xs text-slate-500">{c.contato || "—"}</p>
-                    </div>
+                <div className="flex items-start gap-2.5">
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600"><Users size={18} /></div>
+                  <div>
+                    <h3 className="font-semibold text-slate-900 leading-tight">{c.nome}</h3>
+                    <p className="text-xs text-slate-500">{c.contato || "—"}</p>
                   </div>
                 </div>
                 <div className="mt-3 space-y-1 text-sm">
@@ -143,7 +139,7 @@ function ClienteForm({ item, onCancel, onSave }) {
         <L label="Fax"><input className="input-sm" value={f.fax || ""} onChange={set("fax")} /></L>
       </div>
       <div className="flex gap-2 mt-4">
-        <button onClick={() => onSave(f)} className="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800">Salvar</button>
+        <button onClick={() => onSave(f)} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90">Salvar</button>
         <button onClick={onCancel} className="px-4 py-2 rounded-lg text-slate-600 text-sm font-medium hover:bg-slate-100">Cancelar</button>
       </div>
     </div>

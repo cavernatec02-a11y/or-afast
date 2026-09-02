@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, Pencil } from "lucide-react";
+import { Plus, Trash2, Pencil } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "react-hot-toast";
+import Navbar from "@/components/Navbar";
 import { formatMoeda } from "@/lib/pricingEngine";
 
 export default function TabelaAco() {
@@ -55,20 +55,18 @@ export default function TabelaAco() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-3">
-          <Link to="/" className="p-2 rounded-lg text-slate-500 hover:bg-slate-100"><ArrowLeft size={20} /></Link>
+      <Navbar />
+      <main className="max-w-7xl mx-auto px-4 py-6">
+        <div className="flex flex-wrap items-end gap-4 mb-5">
           <div>
-            <h1 className="text-lg font-semibold text-slate-900">Tabela de Custo de Aço</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Tabela de Custo de Aço</h1>
             <p className="text-sm text-slate-500">Bitolas, tipos, peso específico e preço por kg</p>
           </div>
-          <button onClick={() => setEditando(vazio)} className="ml-auto inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800">
+          <button onClick={() => setEditando(vazio)} className="ml-auto inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90">
             <Plus size={18} /> Novo item
           </button>
         </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-6">
         {editando && <AcoForm item={editando} onCancel={() => setEditando(null)} onSave={salvar} />}
         {loading ? (
           <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" /></div>
@@ -126,7 +124,7 @@ function AcoForm({ item, onCancel, onSave }) {
         <L label="Preço/kg (R$)"><input type="number" step="0.01" className="input-sm text-right" value={f.preco_kg} onChange={(e) => setF({ ...f, preco_kg: Number(e.target.value) })} /></L>
       </div>
       <div className="flex gap-2 mt-4">
-        <button onClick={() => onSave(f)} className="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800">Salvar</button>
+        <button onClick={() => onSave(f)} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90">Salvar</button>
         <button onClick={onCancel} className="px-4 py-2 rounded-lg text-slate-600 text-sm font-medium hover:bg-slate-100">Cancelar</button>
       </div>
     </div>

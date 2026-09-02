@@ -44,66 +44,76 @@
       "items": {
         "type": "object",
         "properties": {
+          "id": {
+            "type": "string"
+          },
           "tipo_produto": {
             "type": "string"
           },
           "nome": {
             "type": "string"
+          }
+        }
+      }
+    },
+    "componentes": {
+      "type": "array",
+      "description": "Pe\u00e7as estruturais de todos os produtos (agrupadas por produto_id)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "produto_id": {
+            "type": "string"
           },
-          "componentes": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "nome": {
-                  "type": "string"
-                },
-                "quantidade": {
-                  "type": "number"
-                },
-                "corte": {
-                  "type": "number"
-                },
-                "comprimento": {
-                  "type": "number"
-                },
-                "custo_aco_id": {
-                  "type": "string"
-                },
-                "peso_especifico": {
-                  "type": "number"
-                },
-                "peso_unit": {
-                  "type": "number"
-                },
-                "peso_total": {
-                  "type": "number"
-                }
-              }
-            }
+          "nome": {
+            "type": "string"
           },
-          "componentes_comerciais": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "descricao": {
-                  "type": "string"
-                },
-                "unidade": {
-                  "type": "string"
-                },
-                "quantidade": {
-                  "type": "number"
-                },
-                "custo_unitario": {
-                  "type": "number"
-                },
-                "total": {
-                  "type": "number"
-                }
-              }
-            }
+          "quantidade": {
+            "type": "number"
+          },
+          "corte": {
+            "type": "number"
+          },
+          "comprimento": {
+            "type": "number"
+          },
+          "custo_aco_id": {
+            "type": "string"
+          },
+          "peso_especifico": {
+            "type": "number"
+          },
+          "peso_unit": {
+            "type": "number"
+          },
+          "peso_total": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "componentes_comerciais": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "produto_id": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "unidade": {
+            "type": "string"
+          },
+          "quantidade": {
+            "type": "number"
+          },
+          "custo_unitario": {
+            "type": "number"
+          },
+          "total": {
+            "type": "number"
           }
         }
       }

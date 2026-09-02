@@ -37,7 +37,7 @@ export default function TotalizadorBar({
           <button onClick={onPDF} disabled={!valorVenda} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-slate-300 text-slate-700 text-sm font-semibold hover:bg-slate-50 disabled:opacity-40 transition">
             <FileDown size={18} /> Gerar PDF
           </button>
-          <button onClick={onSave} disabled={saving} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 disabled:opacity-50 transition">
+          <button onClick={onSave} disabled={saving} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition">
             <Save size={18} /> {saving ? "Salvando..." : "Salvar"}
           </button>
         </div>

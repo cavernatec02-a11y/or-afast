@@ -102,23 +102,20 @@ export function recalcComercial(comp) {
   return { ...comp, total };
 }
 
-// Totais de um único produto
-export function calcProdutoTotais(produto, precoKg) {
-  const peso = (produto?.componentes || []).reduce((s, c) => s + (Number(c.peso_total) || 0), 0);
+// Totais de um único produto (componentes/comerciais já filtrados para o produto)
+export function calcProdutoTotais(produtoId, componentes, comerciais, precoKg) {
+  const comps = (componentes || []).filter((c) => c.produto_id === produtoId);
+  const coms = (comerciais || []).filter((c) => c.produto_id === produtoId);
+  const peso = comps.reduce((s, c) => s + (Number(c.peso_total) || 0), 0);
   const custoAco = peso * (Number(precoKg) || 0);
-  const custoAcessorios = (produto?.componentes_comerciais || []).reduce((s, c) => s + (Number(c.total) || 0), 0);
+  const custoAcessorios = coms.reduce((s, c) => s + (Number(c.total) || 0), 0);
   return { peso, custoAco, custoAcessorios };
 }
 
-// Totais do orçamento inteiro (somando todos os produtos)
-export function calcTotaisOrcamento(produtos, precoKg) {
-  let peso_total_aco = 0;
-  let custo_acessorios = 0;
-  (produtos || []).forEach((p) => {
-    const t = calcProdutoTotais(p, precoKg);
-    peso_total_aco += t.peso;
-    custo_acessorios += t.custoAcessorios;
-  });
+// Totais do orçamento inteiro (arrays flat de componentes e comerciais)
+export function calcTotaisOrcamento(componentes, comerciais, precoKg) {
+  const peso_total_aco = (componentes || []).reduce((s, c) => s + (Number(c.peso_total) || 0), 0);
+  const custo_acessorios = (comerciais || []).reduce((s, c) => s + (Number(c.total) || 0), 0);
   const custo_total_aco = peso_total_aco * (Number(precoKg) || 0);
   return { peso_total_aco, custo_total_aco, custo_acessorios };
 }

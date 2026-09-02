@@ -1,32 +1,35 @@
 import React, { useState } from "react";
-import { Trash2, ChevronDown, ChevronUp, Package, Layers, Boxes } from "lucide-react";
+import { Trash2, ChevronDown, ChevronUp, Layers, Boxes } from "lucide-react";
 import ComponenteGrid from "@/components/orcamento/ComponenteGrid";
 import ComponenteComercialGrid from "@/components/orcamento/ComponenteComercialGrid";
 import { TIPOS_PRODUTO, PRODUTO_PRESETS, recalcComponente, calcProdutoTotais, newUid, formatMoeda, formatPeso } from "@/lib/pricingEngine";
 
-// Um produto dentro do orçamento (ex.: porta-palete, estante). Cada um tem suas peças e componentes comerciais.
-export default function ProdutoCard({ produto, index, acoOptions, catalogoComercial, precoKg, onChange, onRemove }) {
+// Um produto dentro do orçamento. As peças vivem em arrays flat no parent, filtradas por produto_id.
+export default function ProdutoCard({ produto, componentes, comerciais, acoOptions, catalogoComercial, precoKg, onChangeMeta, onChangeComponentes, onChangeComerciais, onRemove }) {
   const [aberto, setAberto] = useState(true);
-  const totais = calcProdutoTotais(produto, precoKg);
+  const totais = calcProdutoTotais(produto.uid, componentes, comerciais, precoKg);
 
   const setTipo = (tipo) => {
-    // Carrega o preset só se o produto ainda não tem peças (não sobrescreve trabalho do usuário)
-    const componentes = produto.componentes && produto.componentes.length > 0
-      ? produto.componentes
-      : (PRODUTO_PRESETS[tipo] || []).map((p) => recalcComponente({ uid: newUid(), ...p, custo_aco_id: "", peso_especifico: 0 }));
-    onChange({ ...produto, tipo_produto: tipo, componentes });
+    onChangeMeta({ ...produto, tipo_produto: tipo });
+    if (componentes.length === 0) {
+      const preset = (PRODUTO_PRESETS[tipo] || []).map((p) => recalcComponente({ uid: newUid(), produto_id: produto.uid, ...p, custo_aco_id: "", peso_especifico: 0 }));
+      onChangeComponentes(preset);
+    }
   };
 
   const recarregarPreset = () => {
     if (!produto.tipo_produto) return;
     if (!confirm("Recarregar as peças padrão deste produto? As peças atuais serão substituídas.")) return;
-    onChange({ ...produto, componentes: (PRODUTO_PRESETS[produto.tipo_produto] || []).map((p) => recalcComponente({ uid: newUid(), ...p, custo_aco_id: "", peso_especifico: 0 })) });
+    onChangeComponentes((PRODUTO_PRESETS[produto.tipo_produto] || []).map((p) => recalcComponente({ uid: newUid(), produto_id: produto.uid, ...p, custo_aco_id: "", peso_especifico: 0 })));
   };
+
+  const handleComponentes = (comps) => onChangeComponentes(comps.map((c) => ({ ...c, produto_id: c.produto_id || produto.uid })));
+  const handleComerciais = (coms) => onChangeComerciais(coms.map((c) => ({ ...c, produto_id: c.produto_id || produto.uid })));
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
       <div className="flex flex-wrap items-center gap-3 p-4 bg-slate-50/70 border-b border-slate-100">
-        <div className="w-9 h-9 rounded-lg bg-slate-900 text-white flex items-center justify-center font-bold text-sm shrink-0">{index + 1}</div>
+        <div className="w-9 h-9 rounded-lg bg-slate-900 text-white flex items-center justify-center font-bold text-sm shrink-0">{produto.indexLabel}</div>
         <div className="flex flex-col gap-1 flex-1 min-w-[220px]">
           <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Tipo de produto</label>
           <select className="input-sm max-w-xs" value={produto.tipo_produto || ""} onChange={(e) => setTipo(e.target.value)}>
@@ -36,7 +39,7 @@ export default function ProdutoCard({ produto, index, acoOptions, catalogoComerc
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Nome (opcional)</label>
-          <input className="input-sm max-w-[200px]" value={produto.nome || ""} onChange={(e) => onChange({ ...produto, nome: e.target.value })} placeholder="Ex.: Porta-palete A" />
+          <input className="input-sm max-w-[200px]" value={produto.nome || ""} onChange={(e) => onChangeMeta({ ...produto, nome: e.target.value })} placeholder="Ex.: Porta-palete A" />
         </div>
         <div className="text-right">
           <div className="text-xs text-slate-500">Peso / Custo aço</div>
@@ -53,11 +56,11 @@ export default function ProdutoCard({ produto, index, acoOptions, catalogoComerc
         <div className="p-4 space-y-4">
           <div>
             <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1.5"><Layers size={14} /> Peças estruturais</h4>
-            <ComponenteGrid componentes={produto.componentes || []} acoOptions={acoOptions} precoKg={precoKg} onChange={(c) => onChange({ ...produto, componentes: c })} />
+            <ComponenteGrid componentes={componentes} acoOptions={acoOptions} precoKg={precoKg} onChange={handleComponentes} />
           </div>
           <div>
             <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1.5"><Boxes size={14} /> Componentes comerciais</h4>
-            <ComponenteComercialGrid componentes={produto.componentes_comerciais || []} catalogo={catalogoComercial} onChange={(c) => onChange({ ...produto, componentes_comerciais: c })} />
+            <ComponenteComercialGrid componentes={comerciais} catalogo={catalogoComercial} onChange={handleComerciais} />
           </div>
         </div>
       )}

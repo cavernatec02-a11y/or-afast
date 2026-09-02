@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Coins, Calculator, Package, User, FileText } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "react-hot-toast";
+import Navbar from "@/components/Navbar";
 import ClienteForm from "@/components/orcamento/ClienteForm";
 import ProdutosSection from "@/components/orcamento/ProdutosSection";
 import CustoAcoCard from "@/components/orcamento/CustoAcoCard";
@@ -15,12 +16,21 @@ import {
   calcCargaTributaria, calcPrecoVendaParaMargem, calcResultadoVenda, newUid,
 } from "@/lib/pricingEngine";
 
-const novoProduto = () => ({ uid: newUid(), tipo_produto: "", nome: "", componentes: [], componentes_comerciais: [] });
+const novoProduto = () => ({ uid: newUid(), tipo_produto: "", nome: "" });
+const stripComp = (c) => ({
+  produto_id: c.produto_id, nome: c.nome, quantidade: c.quantidade, corte: c.corte,
+  comprimento: c.comprimento, custo_aco_id: c.custo_aco_id, peso_especifico: c.peso_especifico,
+  peso_unit: c.peso_unit, peso_total: c.peso_total,
+});
+const stripCom = (c) => ({
+  produto_id: c.produto_id, descricao: c.descricao, unidade: c.unidade,
+  quantidade: c.quantidade, custo_unitario: c.custo_unitario, total: c.total,
+});
 
 export default function NovoOrcamento() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(!!id);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [acoOptions, setAcoOptions] = useState([]);
   const [catalogoComercial, setCatalogoComercial] = useState([]);
@@ -31,6 +41,8 @@ export default function NovoOrcamento() {
     numero_projeto: "", numero_folha: "", uf: "", data: new Date().toISOString().slice(0, 10), validade_dias: 15,
   });
   const [produtos, setProdutos] = useState([]);
+  const [componentes, setComponentes] = useState([]);
+  const [comerciais, setComerciais] = useState([]);
   const [precoAcoKg, setPrecoAcoKg] = useState(15);
   const [montagem, setMontagem] = useState(0);
   const [frete, setFrete] = useState(0);
@@ -73,14 +85,9 @@ export default function NovoOrcamento() {
           numero_projeto: orc.numero_projeto || "", numero_folha: orc.numero_folha || "",
           uf: orc.uf || "", data: orc.data || new Date().toISOString().slice(0, 10), validade_dias: orc.validade_dias ?? 15,
         });
-        // Garante uid em todos os componentes para keys estáveis
-        const produtosComUid = (orc.produtos && orc.produtos.length ? orc.produtos : [novoProduto()]).map((p) => ({
-          ...p,
-          uid: p.uid || newUid(),
-          componentes: (p.componentes || []).map((c) => ({ ...c, uid: c.uid || newUid() })),
-          componentes_comerciais: (p.componentes_comerciais || []).map((c) => ({ ...c, uid: c.uid || newUid() })),
-        }));
-        setProdutos(produtosComUid);
+        setProdutos((orc.produtos && orc.produtos.length ? orc.produtos : [novoProduto()]).map((p) => ({ uid: p.id || newUid(), tipo_produto: p.tipo_produto || "", nome: p.nome || "" })));
+        setComponentes((orc.componentes || []).map((c) => ({ ...c, uid: c.uid || newUid() })));
+        setComerciais((orc.componentes_comerciais || []).map((c) => ({ ...c, uid: c.uid || newUid() })));
         setPrecoAcoKg(orc.preco_aco_kg ?? 15);
         setMontagem(orc.montagem ?? 0);
         setFrete(orc.frete ?? 0);
@@ -100,36 +107,20 @@ export default function NovoOrcamento() {
   }, [id]);
 
   const onSelectCliente = (c) => {
-    setForm((f) => ({
-      ...f,
-      cliente_id: c.id, cliente_nome: c.nome, contato: c.contato || "", telefone: c.telefone || "", email: c.email || "",
-    }));
+    setForm((f) => ({ ...f, cliente_id: c.id, cliente_nome: c.nome, contato: c.contato || "", telefone: c.telefone || "", email: c.email || "" }));
   };
 
-  const totais = useMemo(() => calcTotaisOrcamento(produtos, precoAcoKg), [produtos, precoAcoKg]);
+  const totais = useMemo(() => calcTotaisOrcamento(componentes, comerciais, precoAcoKg), [componentes, comerciais, precoAcoKg]);
   const custoEmpresa = useMemo(
     () => calcCustoEmpresa(totais.custo_total_aco, totais.custo_acessorios, montagem, frete, cobrarMontagem, cobrarFrete),
     [totais, montagem, frete, cobrarMontagem, cobrarFrete]
   );
   const carga = useMemo(() => calcCargaTributaria(form.uf), [form.uf]);
-  const resultado = useMemo(
-    () => calcResultadoVenda(valorVenda, custoEmpresa, carga.total, comissao),
-    [valorVenda, custoEmpresa, carga, comissao]
-  );
-  const totalCliente = useMemo(
-    () => calcTotalCliente(valorVenda, montagem, frete, cobrarMontagem, cobrarFrete),
-    [valorVenda, montagem, frete, cobrarMontagem, cobrarFrete]
-  );
-  const precoMinimo = useMemo(
-    () => calcPrecoVendaParaMargem(custoEmpresa, margemMinima, carga.total, comissao),
-    [custoEmpresa, margemMinima, carga, comissao]
-  );
-  const precoAdequado = useMemo(
-    () => calcPrecoVendaParaMargem(custoEmpresa, margemAdequada, carga.total, comissao),
-    [custoEmpresa, margemAdequada, carga, comissao]
-  );
+  const resultado = useMemo(() => calcResultadoVenda(valorVenda, custoEmpresa, carga.total, comissao), [valorVenda, custoEmpresa, carga, comissao]);
+  const totalCliente = useMemo(() => calcTotalCliente(valorVenda, montagem, frete, cobrarMontagem, cobrarFrete), [valorVenda, montagem, frete, cobrarMontagem, cobrarFrete]);
+  const precoMinimo = useMemo(() => calcPrecoVendaParaMargem(custoEmpresa, margemMinima, carga.total, comissao), [custoEmpresa, margemMinima, carga, comissao]);
+  const precoAdequado = useMemo(() => calcPrecoVendaParaMargem(custoEmpresa, margemAdequada, carga.total, comissao), [custoEmpresa, margemAdequada, carga, comissao]);
 
-  // Sugere automaticamente o preço adequado quando o custo muda e o usuário ainda não definiu um valor.
   useEffect(() => {
     if (!id && custoEmpresa > 0 && !valorVenda) setValorVenda(Number(precoAdequado.toFixed(2)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -140,7 +131,7 @@ export default function NovoOrcamento() {
       toast.error("Informe um título para o orçamento.");
       return;
     }
-    const produtosValidos = produtos.filter((p) => (p.componentes && p.componentes.length > 0) || (p.componentes_comerciais && p.componentes_comerciais.length > 0) || p.tipo_produto);
+    const produtosValidos = produtos.filter((p) => p.tipo_produto || componentes.some((c) => c.produto_id === p.uid) || comerciais.some((c) => c.produto_id === p.uid));
     if (produtosValidos.length === 0) {
       toast.error("Adicione ao menos um produto com peças.");
       return;
@@ -148,7 +139,9 @@ export default function NovoOrcamento() {
     setSaving(true);
     const payload = {
       ...form,
-      produtos: produtosValidos,
+      produtos: produtosValidos.map((p) => ({ id: p.uid, tipo_produto: p.tipo_produto, nome: p.nome })),
+      componentes: componentes.map(stripComp),
+      componentes_comerciais: comerciais.map(stripCom),
       preco_aco_kg: precoAcoKg,
       peso_total_aco: totais.peso_total_aco,
       custo_total_aco: totais.custo_total_aco,
@@ -173,7 +166,7 @@ export default function NovoOrcamento() {
         toast.success("Orçamento atualizado!");
       } else {
         await base44.entities.Orcamento.create(payload);
-        toast.success("Orçamento criado!");
+        toast.success("Orçamento salvo!");
       }
       navigate("/");
     } catch (e) {
@@ -190,7 +183,10 @@ export default function NovoOrcamento() {
     }
     gerarPDFOrcamento({
       ...form,
-      produtos, preco_aco_kg: precoAcoKg,
+      produtos: produtos.map((p) => ({ id: p.uid, tipo_produto: p.tipo_produto, nome: p.nome })),
+      componentes: componentes.map(stripComp),
+      componentes_comerciais: comerciais.map(stripCom),
+      preco_aco_kg: precoAcoKg,
       peso_total_aco: totais.peso_total_aco,
       custo_total_aco: totais.custo_total_aco,
       custo_acessorios: totais.custo_acessorios,
@@ -206,15 +202,16 @@ export default function NovoOrcamento() {
 
   return (
     <div className="min-h-screen pb-28 bg-slate-50">
-      <header className="bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-3">
-          <button onClick={() => navigate("/")} className="p-2 rounded-lg text-slate-500 hover:bg-slate-100"><ArrowLeft size={20} /></button>
+      <Navbar />
+      <div className="max-w-7xl mx-auto px-4 pt-4">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate("/")} className="p-2 rounded-lg text-slate-500 hover:bg-white"><ArrowLeft size={20} /></button>
           <div>
             <h1 className="text-lg font-semibold text-slate-900">{id ? "Editar orçamento" : "Novo orçamento"}</h1>
             <p className="text-sm text-slate-500">Cliente, produtos e formação de preço</p>
           </div>
         </div>
-      </header>
+      </div>
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         <Section n="1" icon={<User size={18} />} title="Cliente" subtitle="Selecione um cliente cadastrado ou preencha manualmente.">
@@ -224,7 +221,11 @@ export default function NovoOrcamento() {
         </Section>
 
         <Section n="2" icon={<Package size={18} />} title="Produtos do orçamento" subtitle="Adicione um ou mais produtos (ex.: porta-palete + estante) para o mesmo cliente.">
-          <ProdutosSection produtos={produtos} acoOptions={acoOptions} catalogoComercial={catalogoComercial} precoKg={precoAcoKg} onChange={setProdutos} />
+          <ProdutosSection
+            produtos={produtos} componentes={componentes} comerciais={comerciais}
+            acoOptions={acoOptions} catalogoComercial={catalogoComercial} precoKg={precoAcoKg}
+            onChangeProdutos={setProdutos} onChangeComponentes={setComponentes} onChangeComerciais={setComerciais}
+          />
         </Section>
 
         <Section n="3" icon={<Coins size={18} />} title="Custo do Aço" subtitle="Informe o preço de mercado do aço (R$/kg). O sistema calcula peso total × preço.">
@@ -272,7 +273,7 @@ function Section({ n, icon, title, subtitle, children }) {
   return (
     <section>
       <div className="flex items-center gap-3 mb-3">
-        <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center font-bold text-sm shrink-0">{n}</div>
+        <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shrink-0">{n}</div>
         <div className="flex items-center gap-2">
           <span className="text-slate-700">{icon}</span>
           <div>

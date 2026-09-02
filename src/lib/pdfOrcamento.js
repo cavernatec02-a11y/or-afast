@@ -1,22 +1,49 @@
 import jsPDF from "jspdf";
 import { formatMoeda, formatPeso } from "@/lib/pricingEngine";
 
+// Desenha a logo da Ripresa (montanha estilizada) em vetor.
+function drawLogoRipresa(doc, x, y, size) {
+  const s = size;
+  const cx = x + s / 2;
+  const top = y;
+  const mid = y + s * 0.5;
+  const bot = y + s;
+  const halfW = s / 2;
+  const midW = s * 0.25; // largura do pico no meio
+  const gap = s * 0.04;
+  // Pico laranja (dois triângulos com fresta branca)
+  doc.setFillColor(255, 130, 0);
+  doc.triangle(cx, top, cx - midW, mid, cx - gap, mid, "F");
+  doc.triangle(cx, top, cx + midW, mid, cx + gap, mid, "F");
+  // Base grafite (dois triângulos)
+  doc.setFillColor(88, 89, 91);
+  doc.triangle(cx - midW, mid, cx + midW, mid, cx + halfW, bot, "F");
+  doc.triangle(cx - midW, mid, cx + halfW, bot, cx - halfW, bot, "F");
+}
+
 // Gera a proposta comercial em PDF (voltada para o cliente — sem margem/lucro).
 export function gerarPDFOrcamento(orc) {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const M = 15;
   const W = 180;
-  let y = 30;
+  let y = 18;
 
-  doc.setFillColor(15, 23, 42);
-  doc.rect(0, 0, 210, 22, "F");
-  doc.setTextColor(255, 255, 255);
+  // Cabeçalho com logo + nome da empresa
+  drawLogoRipresa(doc, M, 6, 14);
+  doc.setTextColor(35, 31, 32);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(15);
-  doc.text("CAVERNATEC — Estruturas de Armazenagem", M, 13);
-  doc.setFontSize(9);
+  doc.text("RIPRESA", M + 19, 13);
   doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
+  doc.setTextColor(119, 119, 119);
+  doc.text("Soluções de Armazenagem", M + 19, 17);
+  doc.setTextColor(119, 119, 119);
+  doc.setFontSize(9);
   doc.text("Proposta Comercial", 210 - M, 13, { align: "right" });
+  doc.setDrawColor(226, 232, 240);
+  doc.line(M, 24, 210 - M, 24);
+  y = 30;
 
   doc.setTextColor(15, 23, 42);
   doc.setFont("helvetica", "bold");
@@ -40,7 +67,7 @@ export function gerarPDFOrcamento(orc) {
   doc.text(`E-mail: ${orc.email || "—"}    UF: ${orc.uf || "—"}`, M + 3, y + 20);
   y += 28;
 
-  // Cada produto vira um bloco
+  // Cada produto vira um bloco (componentes agrupados por produto_id)
   (orc.produtos || []).forEach((prod, pi) => {
     y = ensureSpace(doc, y, 16);
     doc.setFont("helvetica", "bold");
@@ -48,13 +75,15 @@ export function gerarPDFOrcamento(orc) {
     doc.setTextColor(15, 23, 42);
     doc.text(`Produto ${pi + 1}: ${prod.nome || prod.tipo_produto || "—"}`, M, y);
     y += 5;
+    const comps = (orc.componentes || []).filter((c) => c.produto_id === prod.id);
     y = drawTable(doc, y, ["Descrição", "Qtde", "Peso Total (kg)"], [110, 25, 45],
-      (prod.componentes || []).map((c) => [c.nome || "—", String(c.quantidade ?? 0), formatPeso(c.peso_total)]));
+      comps.map((c) => [c.nome || "—", String(c.quantidade ?? 0), formatPeso(c.peso_total)]));
 
-    if ((prod.componentes_comerciais || []).length) {
+    const coms = (orc.componentes_comerciais || []).filter((c) => c.produto_id === prod.id);
+    if (coms.length) {
       y += 3;
       y = drawTable(doc, y, ["Componente", "Qtde", "Un.", "Valor (R$)"], [100, 20, 20, 40],
-        prod.componentes_comerciais.map((c) => [c.descricao || "—", String(c.quantidade ?? 0), c.unidade || "un", formatMoeda(c.total)]));
+        coms.map((c) => [c.descricao || "—", String(c.quantidade ?? 0), c.unidade || "un", formatMoeda(c.total)]));
     }
     y += 4;
   });
@@ -101,7 +130,7 @@ export function gerarPDFOrcamento(orc) {
   doc.line(M, 287, 210 - M, 287);
   doc.setTextColor(148, 163, 184);
   doc.setFontSize(7);
-  doc.text("CavernaTec Estruturas de Armazenagem — OrçaFast", M, 292);
+  doc.text("Ripresa — Soluções de Armazenagem  ·  OrçaRipresa", M, 292);
   doc.text(`Orçamento gerado em ${fmtData(new Date().toISOString())}`, 210 - M, 292, { align: "right" });
 
   doc.save(`Orcamento-${(orc.titulo || "proposta").replace(/[^a-zA-Z0-9]/g, "_")}.pdf`);

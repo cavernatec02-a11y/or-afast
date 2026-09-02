@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Plus, FileText, Pencil, Trash2, Search } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "react-hot-toast";
+import Navbar from "@/components/Navbar";
 import { formatMoeda, formatPeso } from "@/lib/pricingEngine";
 
 export default function Orcamentos() {
@@ -36,31 +37,22 @@ export default function Orcamentos() {
   };
 
   const filtrados = orcamentos.filter((o) =>
-    [o.titulo, o.cliente_nome, o.tipo_produto].join(" ").toLowerCase().includes(busca.toLowerCase())
+    [o.titulo, o.cliente_nome, ...(o.produtos || []).map((p) => p.tipo_produto)].join(" ").toLowerCase().includes(busca.toLowerCase())
   );
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 py-6 flex flex-wrap items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">OrçaFast</h1>
-            <p className="text-sm text-slate-500">Orçamentação industrial de estruturas de armazenagem</p>
-          </div>
-          <div className="ml-auto flex items-center gap-3">
-            <Link to="/clientes" className="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100">Clientes</Link>
-            <Link to="/tabela-aco" className="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100">Tabela de Aço</Link>
-            <Link to="/novo-orcamento" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition">
-              <Plus size={18} /> Novo orçamento
-            </Link>
-          </div>
-        </div>
-      </header>
-
+      <Navbar />
       <main className="max-w-7xl mx-auto px-4 py-6">
-        <div className="relative mb-5 max-w-sm">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por título, cliente ou produto..." className="input pl-9" />
+        <div className="flex flex-wrap items-end gap-4 mb-5">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Orçamentos</h1>
+            <p className="text-sm text-slate-500">Todos os orçamentos salvos — clique para editar</p>
+          </div>
+          <div className="relative ml-auto max-w-sm w-full">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por título, cliente ou produto..." className="input pl-9" />
+          </div>
         </div>
 
         {loading ? (
@@ -73,9 +65,7 @@ export default function Orcamentos() {
               <div key={o.id} className="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-md transition group">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600">
-                      <FileText size={18} />
-                    </div>
+                    <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600"><FileText size={18} /></div>
                     <div>
                       <h3 className="font-semibold text-slate-900 leading-tight">{o.titulo}</h3>
                       <p className="text-xs text-slate-500">{(o.produtos || []).map((p) => p.tipo_produto || p.nome).filter(Boolean).join(", ") || "—"}</p>
@@ -128,12 +118,10 @@ function StatusBadge({ status }) {
 function EmptyState() {
   return (
     <div className="text-center py-20">
-      <div className="w-16 h-16 mx-auto rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mb-4">
-        <FileText size={28} />
-      </div>
-      <h3 className="text-lg font-semibold text-slate-900">Nenhum orçamento ainda</h3>
-      <p className="text-sm text-slate-500 mt-1">Crie seu primeiro orçamento industrial.</p>
-      <Link to="/novo-orcamento" className="inline-flex items-center gap-2 mt-5 px-4 py-2.5 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800">
+      <div className="w-16 h-16 mx-auto rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mb-4"><FileText size={28} /></div>
+      <h3 className="text-lg font-semibold text-slate-900">Nenhum orçamento salvo</h3>
+      <p className="text-sm text-slate-500 mt-1">Crie seu primeiro orçamento — ele fica salvo aqui para editar quando precisar.</p>
+      <Link to="/novo-orcamento" className="inline-flex items-center gap-2 mt-5 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90">
         <Plus size={18} /> Novo orçamento
       </Link>
     </div>

@@ -3,22 +3,36 @@ import { Plus, Package } from "lucide-react";
 import ProdutoCard from "@/components/orcamento/ProdutoCard";
 import { newUid } from "@/lib/pricingEngine";
 
-export default function ProdutosSection({ produtos, acoOptions, catalogoComercial, precoKg, onChange }) {
-  const update = (i, produto) => onChange(produtos.map((p, idx) => (idx === i ? produto : p)));
-  const remove = (i) => onChange(produtos.filter((_, idx) => idx !== i));
-  const add = () => onChange([...produtos, { uid: newUid(), tipo_produto: "", nome: "", componentes: [], componentes_comerciais: [] }]);
+export default function ProdutosSection({ produtos, componentes, comerciais, acoOptions, catalogoComercial, precoKg, onChangeProdutos, onChangeComponentes, onChangeComerciais }) {
+  const updateMeta = (i, p) => onChangeProdutos(produtos.map((x, idx) => (idx === i ? p : x)));
+  const remove = (i) => {
+    const uid = produtos[i].uid;
+    onChangeProdutos(produtos.filter((_, idx) => idx !== i));
+    onChangeComponentes(componentes.filter((c) => c.produto_id !== uid));
+    onChangeComerciais(comerciais.filter((c) => c.produto_id !== uid));
+  };
+  const add = () => onChangeProdutos([...produtos, { uid: newUid(), tipo_produto: "", nome: "" }]);
 
   return (
     <div className="space-y-4">
       {produtos.map((p, i) => (
         <ProdutoCard
-          key={p.uid || `p${i}`}
-          produto={p}
-          index={i}
+          key={p.uid}
+          produto={{ ...p, indexLabel: i + 1 }}
+          componentes={componentes.filter((c) => c.produto_id === p.uid)}
+          comerciais={comerciais.filter((c) => c.produto_id === p.uid)}
           acoOptions={acoOptions}
           catalogoComercial={catalogoComercial}
           precoKg={precoKg}
-          onChange={(prod) => update(i, prod)}
+          onChangeMeta={(meta) => updateMeta(i, meta)}
+          onChangeComponentes={(comps) => {
+            const others = componentes.filter((c) => c.produto_id !== p.uid);
+            onChangeComponentes([...others, ...comps]);
+          }}
+          onChangeComerciais={(coms) => {
+            const others = comerciais.filter((c) => c.produto_id !== p.uid);
+            onChangeComerciais([...others, ...coms]);
+          }}
           onRemove={() => remove(i)}
         />
       ))}
@@ -28,7 +42,7 @@ export default function ProdutosSection({ produtos, acoOptions, catalogoComercia
           <p className="text-sm text-slate-500">Nenhum produto. Adicione o primeiro produto deste orçamento.</p>
         </div>
       )}
-      <button onClick={add} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 border-dashed border-slate-300 text-slate-700 text-sm font-semibold hover:border-slate-400 hover:bg-slate-50 transition w-full justify-center">
+      <button onClick={add} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 border-dashed border-slate-300 text-slate-700 text-sm font-semibold hover:border-primary hover:bg-slate-50 transition w-full justify-center">
         <Plus size={18} /> Adicionar produto
       </button>
     </div>
