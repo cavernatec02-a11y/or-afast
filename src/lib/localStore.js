@@ -49,8 +49,32 @@ export const clientesStore = {
 };
 
 // ─── Tabela de Aço ────────────────────────────────────────────────────────────
+// Tabela oficial de bitolas GSC (chapa fina a quente / galvalume) — peso em kg/m².
+// Fonte: tabelas padrão de chapas de aço (Fabrifer, Beka Metais). Preço/kg de mercado.
+const TABELA_ACO_SEED = [
+  { codigo: "# 20 (0,90)", aco_bitola: "# 20", tipo_aco: "SAE 1008/1010 GALV.", espessura_mm: 0.90, peso_especifico: 7.20, preco_kg: 8.50 },
+  { codigo: "# 18 (1,20)", aco_bitola: "# 18", tipo_aco: "SAE 1008/1010 GALV.", espessura_mm: 1.20, peso_especifico: 9.60, preco_kg: 8.20 },
+  { codigo: "# 16 (1,50)", aco_bitola: "# 16", tipo_aco: "SAE 1008/1010 GALV.", espessura_mm: 1.50, peso_especifico: 12.00, preco_kg: 8.00 },
+  { codigo: "# 14 (2,00)", aco_bitola: "# 14", tipo_aco: "SAE 1008/1010 GALV.", espessura_mm: 2.00, peso_especifico: 16.00, preco_kg: 7.80 },
+  { codigo: "# 13 (2,25)", aco_bitola: "# 13", tipo_aco: "SAE 1008/1010 GALV.", espessura_mm: 2.25, peso_especifico: 18.00, preco_kg: 7.75 },
+  { codigo: "# 12 (2,65)", aco_bitola: "# 12", tipo_aco: "SAE 1008/1010 GALV.", espessura_mm: 2.65, peso_especifico: 21.20, preco_kg: 7.70 },
+  { codigo: "# 10 (3,40)", aco_bitola: "# 10", tipo_aco: "SAE 1008/1010 GALV.", espessura_mm: 3.40, peso_especifico: 27.20, preco_kg: 7.65 },
+  { codigo: "# 14 (2,00)", aco_bitola: "# 14", tipo_aco: "ESTRUTURAL ZINC.", espessura_mm: 2.00, peso_especifico: 16.00, preco_kg: 8.40 },
+  { codigo: "# 16 (1,50)", aco_bitola: "# 16", tipo_aco: "ESTRUTURAL ZINC.", espessura_mm: 1.50, peso_especifico: 12.00, preco_kg: 8.60 },
+  { codigo: "# 18 (1,20)", aco_bitola: "# 18", tipo_aco: "ESTRUTURAL ZINC.", espessura_mm: 1.20, peso_especifico: 9.60, preco_kg: 8.80 },
+  { codigo: "# 12 (2,65)", aco_bitola: "# 12", tipo_aco: "ESTRUTURAL", espessura_mm: 2.65, peso_especifico: 21.20, preco_kg: 7.50 },
+  { codigo: "# 10 (3,40)", aco_bitola: "# 10", tipo_aco: "ESTRUTURAL", espessura_mm: 3.40, peso_especifico: 27.20, preco_kg: 7.45 },
+];
+
 export const acoStore = {
-  list: () => load(KEY_ACO),
+  list: () => {
+    const atual = load(KEY_ACO);
+    if (atual.length === 0) {
+      save(KEY_ACO, TABELA_ACO_SEED.map((s, i) => ({ ...s, id: `seed_${i}` })));
+      return TABELA_ACO_SEED.map((s, i) => ({ ...s, id: `seed_${i}` }));
+    }
+    return atual;
+  },
   create: (data) => {
     const lista = load(KEY_ACO);
     const novo = { ...data, id: newId() };
