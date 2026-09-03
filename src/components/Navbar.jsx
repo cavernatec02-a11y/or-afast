@@ -1,13 +1,14 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Image } from "@/components/ui/image";
-import { FileText, Users, Layers, Plus } from "lucide-react";
+import { FileText, Users, Layers, Plus, ArrowLeft, ArrowRight, Home } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 
 const LOGO_URL = "https://media.base44.com/images/public/6a95cd709d1eb3285a3e45a0/ae1c1268b_WhatsAppImage2026-07-20at152818.jpeg";
 
 export default function Navbar() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const links = [
     { to: "/", label: "Orçamentos", icon: <FileText size={16} /> },
     { to: "/clientes", label: "Clientes", icon: <Users size={16} /> },
@@ -16,11 +17,22 @@ export default function Navbar() {
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-30 dark:bg-slate-900 dark:border-slate-700">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center gap-4">
+        <div className="flex items-center gap-1 shrink-0">
+          <button onClick={() => navigate(-1)} title="Voltar" className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700/50">
+            <ArrowLeft size={18} />
+          </button>
+          <button onClick={() => navigate(1)} title="Avançar" className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700/50">
+            <ArrowRight size={18} />
+          </button>
+          <Link to="/" title="Início" className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700/50">
+            <Home size={18} />
+          </Link>
+        </div>
         <Link to="/" className="flex items-center gap-3 shrink-0">
           <div className="h-10 w-10">
             <Image src={LOGO_URL} alt="Ripresa" fittingType="fit" className="h-10 w-10" />
           </div>
-          <div className="leading-none">
+          <div className="leading-none hidden sm:block">
             <span className="block text-base font-bold text-slate-900 dark:text-slate-100">OrçaRipresa</span>
             <span className="block text-[11px] text-slate-500 dark:text-slate-400">Soluções de Armazenagem</span>
           </div>
@@ -30,9 +42,10 @@ export default function Navbar() {
             <Link
               key={l.to}
               to={l.to}
-              className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium ${pathname === l.to ? "bg-primary text-primary-foreground" : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700/50"}`}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium ${pathname === l.to ? "bg-primary text-primary-foreground" : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700/50"}`}
             >
-              {l.icon} {l.label}
+              <span className="sm:hidden">{l.icon}</span>
+              <span className="hidden sm:inline-flex items-center gap-1.5">{l.icon} {l.label}</span>
             </Link>
           ))}
           <ThemeToggle />

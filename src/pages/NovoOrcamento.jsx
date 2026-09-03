@@ -83,6 +83,13 @@ export default function NovoOrcamento() {
     setLoading(false);
   }, [id]);
 
+  const gerarTitulo = () => {
+    const tipos = produtos.map((p) => p.tipo_produto).filter(Boolean).join(", ");
+    const base = form.cliente_nome || tipos || "Orçamento";
+    const data = new Date(form.data || Date.now()).toLocaleDateString("pt-BR");
+    return `${base} — ${data}`;
+  };
+
   const onSelectCliente = (c) =>
     setForm((f) => ({ ...f, cliente_id: c.id, cliente_nome: c.nome, contato: c.contato || "", telefone: c.telefone || "", email: c.email || "" }));
 
@@ -133,14 +140,17 @@ export default function NovoOrcamento() {
   });
 
   const salvar = () => {
-    if (!form.titulo) { toast.error("Informe um título para o orçamento."); return; }
+    const tituloFinal = form.titulo || gerarTitulo();
+    if (!tituloFinal) { toast.error("Selecione um cliente ou informe um título."); return; }
+    setForm((f) => ({ ...f, titulo: tituloFinal }));
     setSaving(true);
     try {
+      const payload = { ...buildPayload(), titulo: tituloFinal };
       if (id) {
-        orcamentosStore.update(id, buildPayload());
+        orcamentosStore.update(id, payload);
         toast.success("Orçamento atualizado!");
       } else {
-        orcamentosStore.create(buildPayload());
+        orcamentosStore.create(payload);
         toast.success("Orçamento salvo!");
       }
       navigate("/");

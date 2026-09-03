@@ -18,38 +18,13 @@ import TabelaAco from '@/pages/TabelaAco';
 import Clientes from '@/pages/Clientes';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
-
-  if (isLoadingPublicSettings || isLoadingAuth) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      navigateToLogin();
-      return null;
-    }
-  }
-
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
-      <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
-        <Route path="/" element={<Orcamentos />} />
-        <Route path="/novo-orcamento" element={<NovoOrcamento />} />
-        <Route path="/orcamento/:id" element={<NovoOrcamento />} />
-        <Route path="/tabela-aco" element={<TabelaAco />} />
-        <Route path="/clientes" element={<Clientes />} />
-      </Route>
+      <Route path="/" element={<Orcamentos />} />
+      <Route path="/novo-orcamento" element={<NovoOrcamento />} />
+      <Route path="/orcamento/:id" element={<NovoOrcamento />} />
+      <Route path="/tabela-aco" element={<TabelaAco />} />
+      <Route path="/clientes" element={<Clientes />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
