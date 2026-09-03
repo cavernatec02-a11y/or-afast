@@ -39,12 +39,12 @@ export default function Clientes() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <Navbar />
       <main className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex flex-wrap items-end gap-4 mb-5">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Clientes</h1>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Clientes</h1>
             <p className="text-sm text-slate-500">Cadastro local de clientes — salvo no aparelho</p>
           </div>
           <button onClick={() => setEditando({ ...VAZIO })} className="ml-auto inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90">
@@ -68,9 +68,9 @@ export default function Clientes() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtrados.map((c) => (
-              <div key={c.id} className="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-md transition">
+              <div key={c.id} className="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-md transition dark:border-slate-700 dark:bg-slate-900">
                 <div className="flex items-start gap-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600"><Users size={18} /></div>
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 dark:bg-slate-800 dark:text-slate-300"><Users size={18} /></div>
                   <div>
                     <h3 className="font-semibold text-slate-900">{c.nome}</h3>
                     <p className="text-xs text-slate-500">{c.contato || "—"}</p>
@@ -107,8 +107,8 @@ function ClienteForm({ item, onCancel, onSave }) {
   const [f, setF] = useState(item);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   return (
-    <div className="mb-5 bg-white rounded-2xl border border-slate-200 p-5">
-      <h3 className="font-semibold text-slate-900 mb-4">{item.id ? "Editar cliente" : "Novo cliente"}</h3>
+    <div className="mb-5 bg-white rounded-2xl border border-slate-200 p-5 dark:border-slate-700 dark:bg-slate-900">
+      <h3 className="font-semibold text-slate-900 mb-4 dark:text-slate-100">{item.id ? "Editar cliente" : "Novo cliente"}</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         <L label="Nome / Razão Social"><input className="input-sm" value={f.nome || ""} onChange={set("nome")} /></L>
         <L label="Contato"><input className="input-sm" value={f.contato || ""} onChange={set("contato")} /></L>

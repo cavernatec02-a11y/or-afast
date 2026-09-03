@@ -26,8 +26,8 @@ export default function FormacaoPreco({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
-          <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2"><TrendingUp size={16} className="text-slate-500" /> Composição de Custos</h3>
+        <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
+          <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2 dark:text-slate-100"><TrendingUp size={16} className="text-slate-500" /> Composição de Custos</h3>
           <Line label="Custo do Aço" value={formatMoeda(custoAco)} />
           <Line label="Acessórios / Comerciais" value={formatMoeda(custoAcessorios)} />
           <Line label="Montagem" value={cobrarMontagem ? "Repassada ao cliente" : formatMoeda(montagem)} />
@@ -36,8 +36,8 @@ export default function FormacaoPreco({
           <Line label="Custo da Empresa (base da margem)" value={formatMoeda(custoEmpresa)} strong />
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
-          <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2"><Info size={16} className="text-slate-500" /> Tributos (Lucro Presumido) e Resultado</h3>
+        <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
+          <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2 dark:text-slate-100"><Info size={16} className="text-slate-500" /> Tributos (Lucro Presumido) e Resultado</h3>
           <Line label="PIS (0,65%)" value={formatPercent(LUCRO_PRESUMIDO.pis)} />
           <Line label="COFINS (3,00%)" value={formatPercent(LUCRO_PRESUMIDO.cofins)} />
           <Line label="CSLL" value={formatPercent(LUCRO_PRESUMIDO.csll)} />
@@ -52,8 +52,8 @@ export default function FormacaoPreco({
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
-        <h3 className="text-sm font-semibold text-slate-900 mb-1 flex items-center gap-2"><Receipt size={16} className="text-slate-500" /> Sugestão de Preço de Venda</h3>
+      <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
+        <h3 className="text-sm font-semibold text-slate-900 mb-1 flex items-center gap-2 dark:text-slate-100"><Receipt size={16} className="text-slate-500" /> Sugestão de Preço de Venda</h3>
         <p className="text-xs text-slate-500 mb-3">Preço de venda = Custo da empresa ÷ (1 − Margem − Carga Tributária − Comissão). Use como referência e ajuste o valor na barra inferior.</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <SuggestionCard tone="amber" label={`Preço Mínimo (margem ${margemMinima}%)`} value={formatMoeda(precoMinimo)} onUse={() => onUsarPreco(precoMinimo)} />

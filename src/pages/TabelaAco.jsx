@@ -34,12 +34,12 @@ export default function TabelaAco() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <Navbar />
       <main className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex flex-wrap items-end gap-4 mb-5">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Tabela de Custo de Aço</h1>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Tabela de Custo de Aço</h1>
             <p className="text-sm text-slate-500">Bitolas, tipos, peso específico e preço por kg — salvo localmente</p>
           </div>
           <button onClick={() => setEditando(VAZIO)} className="ml-auto inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90">
@@ -49,10 +49,10 @@ export default function TabelaAco() {
 
         {editando && <AcoForm item={editando} onCancel={() => setEditando(null)} onSave={salvar} />}
 
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
+              <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide dark:bg-slate-800/50">
                 <th className="text-left font-semibold px-3 py-3">Código</th>
                 <th className="text-left font-semibold px-3 py-3">Bitola</th>
                 <th className="text-left font-semibold px-3 py-3">Tipo de Aço</th>
@@ -64,7 +64,7 @@ export default function TabelaAco() {
             </thead>
             <tbody>
               {lista.map((a) => (
-                <tr key={a.id} className="border-t border-slate-100 hover:bg-slate-50/50">
+                <tr key={a.id} className="border-t border-slate-100 hover:bg-slate-50/50 dark:border-slate-700/50 dark:hover:bg-slate-800/30">
                   <td className="px-3 py-2.5 font-medium text-slate-900">{a.codigo}</td>
                   <td className="px-3 py-2.5 text-slate-600">{a.aco_bitola}</td>
                   <td className="px-3 py-2.5 text-slate-600">{a.tipo_aco}</td>
@@ -90,8 +90,8 @@ function AcoForm({ item, onCancel, onSave }) {
   const [f, setF] = useState(item);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   return (
-    <div className="mb-5 bg-white rounded-2xl border border-slate-200 p-5">
-      <h3 className="font-semibold text-slate-900 mb-4">{item.id ? "Editar item" : "Novo item"}</h3>
+    <div className="mb-5 bg-white rounded-2xl border border-slate-200 p-5 dark:border-slate-700 dark:bg-slate-900">
+      <h3 className="font-semibold text-slate-900 mb-4 dark:text-slate-100">{item.id ? "Editar item" : "Novo item"}</h3>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <L label="Código"><input className="input-sm" value={f.codigo} onChange={set("codigo")} placeholder="# 14 (2,00)" /></L>
         <L label="Bitola"><input className="input-sm" value={f.aco_bitola} onChange={set("aco_bitola")} placeholder="# 14" /></L>

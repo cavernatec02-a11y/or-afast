@@ -102,6 +102,12 @@ export default function NovoOrcamento() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [custoEmpresa]);
 
+  const sugerirPreco = () => {
+    if (custoEmpresa <= 0) { toast.error("Adicione componentes antes de sugerir o preço."); return; }
+    setValorVenda(Number(precoAdequado.toFixed(2)));
+    toast.success(`Preço sugerido para margem de ${margemAdequada}%`);
+  };
+
   const buildPayload = () => ({
     ...form,
     produtos: produtos.map((p) => ({ id: p.uid, tipo_produto: p.tipo_produto, nome: p.nome })),
@@ -151,25 +157,25 @@ export default function NovoOrcamento() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center py-24"><div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" /></div>;
+    return <div className="flex items-center justify-center py-24"><div className="w-8 h-8 border-4 border-slate-200 border-t-primary rounded-full animate-spin dark:border-slate-700"></div></div>;
   }
 
   return (
-    <div className="min-h-screen pb-28 bg-slate-50">
+    <div className="min-h-screen pb-28 bg-slate-50 dark:bg-slate-950">
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 pt-4">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate("/")} className="p-2 rounded-lg text-slate-500 hover:bg-white"><ArrowLeft size={20} /></button>
+          <button onClick={() => navigate("/")} className="p-2 rounded-lg text-slate-500 hover:bg-white dark:text-slate-400 dark:hover:bg-slate-800"><ArrowLeft size={20} /></button>
           <div>
-            <h1 className="text-lg font-semibold text-slate-900">{id ? "Editar orçamento" : "Novo orçamento"}</h1>
-            <p className="text-sm text-slate-500">Cliente, produtos e formação de preço</p>
+            <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{id ? "Editar orçamento" : "Novo orçamento"}</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Cliente, produtos e formação de preço</p>
           </div>
         </div>
       </div>
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         <Section n="1" icon={<User size={18} />} title="Cliente" subtitle="Selecione um cliente cadastrado ou preencha manualmente.">
-          <div className="bg-white rounded-2xl border border-slate-200 p-5">
+          <div className="bg-white rounded-2xl border border-slate-200 p-5 dark:bg-slate-900 dark:border-slate-700">
             <ClienteForm form={form} onChange={setForm} clientes={clientes} onSelectCliente={onSelectCliente} />
           </div>
         </Section>
@@ -217,6 +223,8 @@ export default function NovoOrcamento() {
         totalCliente={totalCliente}
         resultado={resultado}
         margemMinima={margemMinima} margemAdequada={margemAdequada}
+        precoAdequado={precoAdequado}
+        onSugerir={sugerirPreco}
         onSave={salvar} onPDF={gerarPDF} saving={saving}
       />
     </div>
@@ -229,10 +237,10 @@ function Section({ n, icon, title, subtitle, children }) {
       <div className="flex items-center gap-3 mb-3">
         <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shrink-0">{n}</div>
         <div className="flex items-center gap-2">
-          <span className="text-slate-700">{icon}</span>
+          <span className="text-slate-700 dark:text-slate-300">{icon}</span>
           <div>
-            <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-            <p className="text-xs text-slate-500">{subtitle}</p>
+            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>
           </div>
         </div>
       </div>

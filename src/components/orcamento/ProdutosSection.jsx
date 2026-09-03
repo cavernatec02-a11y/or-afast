@@ -37,12 +37,12 @@ export default function ProdutosSection({ produtos, componentes, comerciais, aco
         />
       ))}
       {produtos.length === 0 && (
-        <div className="text-center py-10 rounded-2xl border-2 border-dashed border-slate-200 bg-white">
-          <Package size={28} className="mx-auto text-slate-300 mb-2" />
+        <div className="text-center py-10 rounded-2xl border-2 border-dashed border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+          <Package size={28} className="mx-auto text-slate-300 mb-2 dark:text-slate-600" />
           <p className="text-sm text-slate-500">Nenhum produto. Adicione o primeiro produto deste orçamento.</p>
         </div>
       )}
-      <button onClick={add} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 border-dashed border-slate-300 text-slate-700 text-sm font-semibold hover:border-primary hover:bg-slate-50 transition w-full justify-center">
+      <button onClick={add} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 border-dashed border-slate-300 text-slate-700 text-sm font-semibold hover:border-primary hover:bg-slate-50 transition w-full justify-center dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800">
         <Plus size={18} /> Adicionar produto
       </button>
     </div>

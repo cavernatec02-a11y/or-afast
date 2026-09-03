@@ -17,10 +17,10 @@ export default function ComponenteComercialGrid({ componentes, catalogo, onChang
   };
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
       <table className="w-full text-sm">
         <thead>
-          <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
+          <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide dark:bg-slate-800/50">
             <th className="text-left font-semibold px-3 py-3 min-w-[260px]">Componente</th>
             <th className="text-left font-semibold px-3 py-3 w-20">Unidade</th>
             <th className="text-right font-semibold px-3 py-3 w-24">Qtde</th>
@@ -31,7 +31,7 @@ export default function ComponenteComercialGrid({ componentes, catalogo, onChang
         </thead>
         <tbody>
           {componentes.map((c, i) => (
-            <tr key={c.uid || i} className="border-t border-slate-100 hover:bg-slate-50/50">
+            <tr key={c.uid || i} className="border-t border-slate-100 hover:bg-slate-50/50 dark:border-slate-700/50 dark:hover:bg-slate-800/30">
               <td className="px-3 py-2"><input className="input-sm" list="catalogo-comercial" value={c.descricao || ""} onChange={(e) => onPick(i, e.target.value)} placeholder={'Ex.: Paraf. Ø 5/16"x 1"'} /></td>
               <td className="px-3 py-2"><input className="input-sm" value={c.unidade || ""} onChange={(e) => update(i, { unidade: e.target.value })} /></td>
               <td className="px-3 py-2"><NumberInput value={c.quantidade ?? 0} onChange={(v) => update(i, { quantidade: v })} className="input-sm text-right" /></td>

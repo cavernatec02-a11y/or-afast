@@ -22,10 +22,10 @@ export default function ComponenteGrid({ componentes, acoOptions, precoKg, onCha
   };
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
       <table className="w-full text-sm">
         <thead>
-          <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
+          <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide dark:bg-slate-800/50">
             <th className="text-left font-semibold px-3 py-3 min-w-[170px]">Descrição</th>
             <th className="text-right font-semibold px-3 py-3 w-20">Qtde</th>
             <th className="text-right font-semibold px-3 py-3 w-24">Corte (m)</th>
@@ -41,7 +41,7 @@ export default function ComponenteGrid({ componentes, acoOptions, precoKg, onCha
           {componentes.map((c, i) => {
             const custo = (c.peso_total || 0) * (precoKg || 0);
             return (
-              <tr key={c.uid || i} className="border-t border-slate-100 hover:bg-slate-50/50">
+              <tr key={c.uid || i} className="border-t border-slate-100 hover:bg-slate-50/50 dark:border-slate-700/50 dark:hover:bg-slate-800/30">
                 <td className="px-3 py-2"><input className="input-sm" value={c.nome || ""} onChange={(e) => update(i, { nome: e.target.value })} placeholder="Ex.: Coluna 90 # 14" /></td>
                 <td className="px-3 py-2"><NumberInput value={c.quantidade ?? 0} onChange={(v) => update(i, { quantidade: v })} className="input-sm text-right" /></td>
                 <td className="px-3 py-2"><NumberInput value={c.corte ?? 0} onChange={(v) => update(i, { corte: v })} className="input-sm text-right" /></td>

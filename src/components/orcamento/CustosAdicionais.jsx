@@ -26,11 +26,11 @@ export default function CustosAdicionais({
 
 function CostCard({ icon, label, value, onChange, cobrar, setCobrar, cobrarLabel }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3.5">
+    <div className="rounded-xl border border-slate-200 bg-white p-3.5 dark:border-slate-700 dark:bg-slate-900">
       <div className="flex items-center gap-1.5 mb-2"><span className="text-slate-500">{icon}</span><span className="text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</span></div>
-      <NumberInput value={value ?? 0} onChange={onChange} prefix="R$" className="input-sm text-right font-semibold text-slate-900" />
+      <NumberInput value={value ?? 0} onChange={onChange} prefix="R$" className="input-sm text-right font-semibold text-slate-900 dark:text-slate-100" />
       <label className="flex items-center gap-2 mt-2.5 cursor-pointer select-none">
-        <input type="checkbox" checked={!!cobrar} onChange={(e) => setCobrar(e.target.checked)} className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900/30" />
+        <input type="checkbox" checked={!!cobrar} onChange={(e) => setCobrar(e.target.checked)} className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary/30 dark:border-slate-600 dark:bg-slate-800" />
         <span className="text-xs font-medium text-slate-600">{cobrarLabel}</span>
       </label>
     </div>
@@ -40,9 +40,9 @@ function CostCard({ icon, label, value, onChange, cobrar, setCobrar, cobrarLabel
 function SimpleCard({ icon, label, value, onChange, suffix, hint, tone }) {
   const toneClass = tone === "amber" ? "text-amber-600" : tone === "emerald" ? "text-emerald-600" : "text-slate-500";
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3.5">
+    <div className="rounded-xl border border-slate-200 bg-white p-3.5 dark:border-slate-700 dark:bg-slate-900">
       <div className="flex items-center gap-1.5 mb-2"><span className={toneClass}>{icon}</span><span className="text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</span></div>
-      <NumberInput value={value ?? 0} onChange={onChange} suffix={suffix} className="input-sm text-right font-semibold text-slate-900" />
+      <NumberInput value={value ?? 0} onChange={onChange} suffix={suffix} className="input-sm text-right font-semibold text-slate-900 dark:text-slate-100" />
       {hint && <div className="text-xs text-slate-400 mt-1 text-right tabular-nums">{hint}</div>}
     </div>
   );

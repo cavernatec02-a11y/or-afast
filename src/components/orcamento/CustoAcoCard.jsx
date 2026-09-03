@@ -6,7 +6,7 @@ import { formatMoeda, formatPeso } from "@/lib/pricingEngine";
 // Card em destaque: peso total da estrutura, preço do kg do aço (fácil acesso) e custo do aço.
 export default function CustoAcoCard({ pesoTotal, precoKg, setPrecoKg, custoAco }) {
   return (
-    <div className="rounded-2xl border-2 border-slate-900/10 bg-gradient-to-br from-slate-900 to-slate-800 text-white p-5">
+    <div className="rounded-2xl border-2 border-slate-900/10 bg-gradient-to-br from-slate-900 to-slate-800 text-white p-5 dark:border-primary/20">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
         <div>
           <div className="flex items-center gap-2 text-slate-300 text-xs font-medium uppercase tracking-wide mb-1"><Scale size={14} /> Peso Total da Estrutura</div>
