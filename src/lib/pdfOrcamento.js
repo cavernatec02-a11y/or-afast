@@ -108,13 +108,19 @@ export async function gerarPDFOrcamento(orc) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.setTextColor(...GRAY);
-  doc.text("vendas@ripresa.com.br", M + W, 14, { align: "right" });
-  doc.text("(11) 97376-0433", M + W, 19, { align: "right" });
+  doc.text("hericke.comercial@ripresa.com.br", M + W, 14, { align: "right" });
+  doc.text("(11) 97376-0433  ·  https://ripresa.com.br", M + W, 19, { align: "right" });
   // Linha divisória laranja
   doc.setDrawColor(...ORANGE);
   doc.setLineWidth(1.2);
   doc.line(M, 34, M + W, 34);
   doc.setLineWidth(0.3);
+
+  // Dados da empresa
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
+  doc.setTextColor(...GRAY);
+  doc.text("CNPJ: 21.567.464/0001-54  ·  Estrada dos Romeiros, 796 - Centro, Santana de Parnaíba-SP  ·  Cep: 06501-001", M + W / 2, 38, { align: "center" });
 
   // Título "PROPOSTA COMERCIAL"
   doc.setFont("helvetica", "bold");
@@ -171,41 +177,28 @@ export async function gerarPDFOrcamento(orc) {
     const comps = (orc.componentes || []).filter((c) => c.produto_id === prod.id);
     if (comps.length > 0) {
       const cols = [
-        { label: "Descrição", w: 80, align: "left" },
-        { label: "Qtde", w: 20, align: "right" },
-        { label: "Valor Unit.", w: 40, align: "right" },
-        { label: "Valor Total", w: 40, align: "right" },
+        { label: "Descrição", w: 140, align: "left" },
+        { label: "Qtde", w: 40, align: "right" },
       ];
       y = drawTableHeader(doc, y, cols);
       comps.forEach((c, i) => {
-        const valorUnit = (Number(c.peso_unit) || 0) * (Number(orc.preco_aco_kg) || 0);
-        const valorTotal = (Number(c.peso_total) || 0) * (Number(orc.preco_aco_kg) || 0);
         y = drawTableRow(doc, y, cols, [
           c.nome || "—", c.quantidade ?? 0,
-          formatMoeda(valorUnit), formatMoeda(valorTotal),
         ], i % 2 === 0);
       });
-      const valorProduto = comps.reduce((s, c) => s + (Number(c.peso_total) || 0), 0) * (Number(orc.preco_aco_kg) || 0);
-      y = checkY(doc, y, 8);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(8.5);
-      doc.setTextColor(...DARK);
-      doc.text(`Subtotal: ${formatMoeda(valorProduto)}`, M + W - 2, y + 5, { align: "right" });
-      y += 8;
+      y += 4;
     }
 
     const coms = (orc.componentes_comerciais || []).filter((c) => c.produto_id === prod.id);
     if (coms.length > 0) {
       const cols2 = [
-        { label: "Componente / Acessório", w: 100, align: "left" },
-        { label: "Qtde", w: 20, align: "right" },
-        { label: "Un.", w: 20, align: "right" },
-        { label: "Valor (R$)", w: 40, align: "right" },
+        { label: "Componente / Acessório", w: 140, align: "left" },
+        { label: "Qtde", w: 40, align: "right" },
       ];
       y = drawTableHeader(doc, y, cols2);
       coms.forEach((c, i) => {
         y = drawTableRow(doc, y, cols2, [
-          c.descricao || "—", c.quantidade ?? 0, c.unidade || "un", formatMoeda(c.total),
+          c.descricao || "—", c.quantidade ?? 0,
         ], i % 2 === 0);
       });
       y += 6;
@@ -270,8 +263,9 @@ export async function gerarPDFOrcamento(orc) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7.5);
     doc.setTextColor(...GRAY);
-    doc.text("RIPRESA Soluções de Armazenagem  ·  vendas@ripresa.com.br  ·  (11) 97376-0433", M, 292);
-    doc.text(`Página ${p}/${pageCount}  ·  ${fmtData(new Date().toISOString())}`, M + W, 292, { align: "right" });
+    doc.text("RIPRESA  ·  CNPJ: 21.567.464/0001-54  ·  Estrada dos Romeiros, 796 - Santana de Parnaíba-SP  ·  Cep: 06501-001", M, 290);
+    doc.text("hericke.comercial@ripresa.com.br  ·  (11) 97376-0433  ·  https://ripresa.com.br", M, 293.5);
+    doc.text(`Página ${p}/${pageCount}  ·  ${fmtData(new Date().toISOString())}`, M + W, 293.5, { align: "right" });
   }
 
   doc.save(`Proposta-Ripresa-${(orc.titulo || "proposta").replace(/[^a-zA-Z0-9]/g, "_")}.pdf`);
