@@ -12,7 +12,7 @@ export const ICMS_POR_UF = {
 export const UFS = Object.keys(ICMS_POR_UF).sort();
 
 export const LUCRO_PRESUMIDO = {
-  pis: 0.0065, cofins: 0.03, csll: 0.0072, irpj: 0.012, irpj_adicional: 0.004,
+  pis: 0.0065, cofins: 0.03, csll: 0.0072, irpj: 0.012, irpj_adicional: 0.008,
 };
 export function calcCargaFederal() {
   return LUCRO_PRESUMIDO.pis + LUCRO_PRESUMIDO.cofins + LUCRO_PRESUMIDO.csll + LUCRO_PRESUMIDO.irpj + LUCRO_PRESUMIDO.irpj_adicional;

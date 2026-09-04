@@ -9,10 +9,12 @@ export default function ProdutoCard({ produto, componentes, comerciais, acoOptio
   const [aberto, setAberto] = useState(true);
   const totais = calcProdutoTotais(produto.uid, componentes, comerciais, precoKg);
 
+  const defaultAco = () => acoOptions.find((a) => a.codigo === "# 14 (2,00)") || acoOptions[0];
   const setTipo = (tipo) => {
     onChangeMeta({ ...produto, tipo_produto: tipo });
     if (componentes.length === 0) {
-      const preset = (PRODUTO_PRESETS[tipo] || []).map((p) => recalcComponente({ uid: newUid(), produto_id: produto.uid, ...p, custo_aco_id: "", peso_especifico: 0 }));
+      const aco = defaultAco();
+      const preset = (PRODUTO_PRESETS[tipo] || []).map((p) => recalcComponente({ uid: newUid(), produto_id: produto.uid, ...p, custo_aco_id: aco?.id || "", peso_especifico: aco?.peso_especifico || 0 }));
       onChangeComponentes(preset);
     }
   };
@@ -20,7 +22,8 @@ export default function ProdutoCard({ produto, componentes, comerciais, acoOptio
   const recarregarPreset = () => {
     if (!produto.tipo_produto) return;
     if (!confirm("Recarregar as peças padrão deste produto? As peças atuais serão substituídas.")) return;
-    onChangeComponentes((PRODUTO_PRESETS[produto.tipo_produto] || []).map((p) => recalcComponente({ uid: newUid(), produto_id: produto.uid, ...p, custo_aco_id: "", peso_especifico: 0 })));
+    const aco = defaultAco();
+    onChangeComponentes((PRODUTO_PRESETS[produto.tipo_produto] || []).map((p) => recalcComponente({ uid: newUid(), produto_id: produto.uid, ...p, custo_aco_id: aco?.id || "", peso_especifico: aco?.peso_especifico || 0 })));
   };
 
   const handleComponentes = (comps) => onChangeComponentes(comps.map((c) => ({ ...c, produto_id: c.produto_id || produto.uid })));

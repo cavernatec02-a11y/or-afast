@@ -40,8 +40,8 @@ export default function FormacaoPreco({
           <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2 dark:text-slate-100"><Info size={16} className="text-slate-500" /> Tributos (Lucro Presumido) e Resultado</h3>
           <Line label="PIS (0,65%)" value={formatPercent(LUCRO_PRESUMIDO.pis)} />
           <Line label="COFINS (3,00%)" value={formatPercent(LUCRO_PRESUMIDO.cofins)} />
-          <Line label="CSLL" value={formatPercent(LUCRO_PRESUMIDO.csll)} />
-          <Line label="IRPJ + Adicional" value={formatPercent(LUCRO_PRESUMIDO.irpj + LUCRO_PRESUMIDO.irpj_adicional)} />
+          <Line label="CSLL (0,72%)" value={formatPercent(LUCRO_PRESUMIDO.csll)} />
+          <Line label="IRPJ + Adicional (2,00%)" value={formatPercent(LUCRO_PRESUMIDO.irpj + LUCRO_PRESUMIDO.irpj_adicional)} />
           <Line label="ICMS" value={formatPercent(carga.icms)} />
           <div className="border-t border-slate-200 my-2" />
           <Line label="Carga Tributária Total" value={formatPercent(carga.total)} />

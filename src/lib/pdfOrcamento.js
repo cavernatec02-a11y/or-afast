@@ -161,11 +161,11 @@ export async function gerarPDFOrcamento(orc) {
     const comps = (orc.componentes || []).filter((c) => c.produto_id === prod.id);
     if (comps.length > 0) {
       const cols = [
-        { label: "Descrição da Peça", w: 90, align: "left" },
-        { label: "Qtde", w: 20, align: "right" },
-        { label: "Corte (m)", w: 30, align: "right" },
-        { label: "Compr. (m)", w: 30, align: "right" },
-        { label: "Peso Total", w: 30, align: "right" },
+        { label: "Descrição da Peça", w: 70, align: "left" },
+        { label: "Qtde", w: 18, align: "right" },
+        { label: "Corte (m)", w: 25, align: "right" },
+        { label: "Compr. (m)", w: 25, align: "right" },
+        { label: "Peso Total", w: 42, align: "right" },
       ];
       y = drawTableHeader(doc, y, cols);
       comps.forEach((c, i) => {
@@ -175,7 +175,13 @@ export async function gerarPDFOrcamento(orc) {
           `${formatPeso(c.peso_total)} kg`,
         ], i % 2 === 0);
       });
-      y += 4;
+      const pesoProduto = comps.reduce((s, c) => s + (Number(c.peso_total) || 0), 0);
+      y = checkY(doc, y, 8);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8.5);
+      doc.setTextColor(...DARK);
+      doc.text(`Subtotal: ${formatPeso(pesoProduto)} kg`, M + W - 2, y + 5, { align: "right" });
+      y += 8;
     }
 
     const coms = (orc.componentes_comerciais || []).filter((c) => c.produto_id === prod.id);
@@ -202,7 +208,7 @@ export async function gerarPDFOrcamento(orc) {
 
   // Tabela de itens do resumo (sem Custo do Aço — informação interna)
   const itensResumo = [];
-  if (orc.custo_acessorios > 0) itensResumo.push(["Acessórios e Componentes", formatMoeda(orc.custo_acessorios)]);
+  itensResumo.push(["Estrutura Metálica", formatMoeda(orc.valor_venda)]);
   if (orc.cobrar_montagem && orc.montagem > 0) itensResumo.push(["Montagem", formatMoeda(orc.montagem)]);
   if (orc.cobrar_frete && orc.frete > 0) itensResumo.push(["Frete", formatMoeda(orc.frete)]);
 
