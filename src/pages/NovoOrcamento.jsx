@@ -16,7 +16,7 @@ import {
   calcCargaTributaria, calcPrecoVendaParaMargem, calcResultadoVenda, newUid,
 } from "@/lib/pricingEngine";
 
-const novoProduto = () => ({ uid: newUid(), tipo_produto: "", nome: "" });
+const novoProduto = () => ({ uid: newUid(), tipo_produto: "", nome: "", descricao: "" });
 
 export default function NovoOrcamento() {
   const { id } = useParams();
@@ -68,7 +68,7 @@ export default function NovoOrcamento() {
       validade_dias: orc.validade_dias ?? 15,
     });
     const prods = orc.produtos && orc.produtos.length ? orc.produtos : [novoProduto()];
-    setProdutos(prods.map((p) => ({ uid: p.id || newUid(), tipo_produto: p.tipo_produto || "", nome: p.nome || "" })));
+    setProdutos(prods.map((p) => ({ uid: p.id || newUid(), tipo_produto: p.tipo_produto || "", nome: p.nome || "", descricao: p.descricao || "" })));
     setComponentes((orc.componentes || []).map((c) => ({ ...c, uid: c.uid || newUid() })));
     setComerciais((orc.componentes_comerciais || []).map((c) => ({ ...c, uid: c.uid || newUid() })));
     setPrecoAcoKg(orc.preco_aco_kg ?? 15);
@@ -117,7 +117,7 @@ export default function NovoOrcamento() {
 
   const buildPayload = () => ({
     ...form,
-    produtos: produtos.map((p) => ({ id: p.uid, tipo_produto: p.tipo_produto, nome: p.nome })),
+    produtos: produtos.map((p) => ({ id: p.uid, tipo_produto: p.tipo_produto, nome: p.nome, descricao: p.descricao || "" })),
     componentes: componentes.map(({ uid, ...c }) => c),
     componentes_comerciais: comerciais.map(({ uid, ...c }) => c),
     preco_aco_kg: precoAcoKg,

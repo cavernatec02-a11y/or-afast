@@ -158,29 +158,39 @@ export async function gerarPDFOrcamento(orc) {
     y = checkY(doc, y, 20);
     y = sectionTitle(doc, y, `PRODUTO ${pi + 1}${prod.nome || prod.tipo_produto ? " — " + (prod.nome || prod.tipo_produto) : ""}`);
 
+    if (prod.descricao) {
+      y = checkY(doc, y, 15);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(...DARK);
+      const descLines = doc.splitTextToSize(prod.descricao, W - 4);
+      doc.text(descLines, M + 2, y + 4);
+      y += descLines.length * 4 + 4;
+    }
+
     const comps = (orc.componentes || []).filter((c) => c.produto_id === prod.id);
     if (comps.length > 0) {
       const cols = [
-        { label: "Descrição da Peça", w: 70, align: "left" },
-        { label: "Qtde", w: 18, align: "right" },
-        { label: "Corte (m)", w: 25, align: "right" },
-        { label: "Compr. (m)", w: 25, align: "right" },
-        { label: "Peso Total", w: 42, align: "right" },
+        { label: "Descrição", w: 80, align: "left" },
+        { label: "Qtde", w: 20, align: "right" },
+        { label: "Valor Unit.", w: 40, align: "right" },
+        { label: "Valor Total", w: 40, align: "right" },
       ];
       y = drawTableHeader(doc, y, cols);
       comps.forEach((c, i) => {
+        const valorUnit = (Number(c.peso_unit) || 0) * (Number(orc.preco_aco_kg) || 0);
+        const valorTotal = (Number(c.peso_total) || 0) * (Number(orc.preco_aco_kg) || 0);
         y = drawTableRow(doc, y, cols, [
           c.nome || "—", c.quantidade ?? 0,
-          fmtNum(c.corte), fmtNum(c.comprimento),
-          `${formatPeso(c.peso_total)} kg`,
+          formatMoeda(valorUnit), formatMoeda(valorTotal),
         ], i % 2 === 0);
       });
-      const pesoProduto = comps.reduce((s, c) => s + (Number(c.peso_total) || 0), 0);
+      const valorProduto = comps.reduce((s, c) => s + (Number(c.peso_total) || 0), 0) * (Number(orc.preco_aco_kg) || 0);
       y = checkY(doc, y, 8);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8.5);
       doc.setTextColor(...DARK);
-      doc.text(`Subtotal: ${formatPeso(pesoProduto)} kg`, M + W - 2, y + 5, { align: "right" });
+      doc.text(`Subtotal: ${formatMoeda(valorProduto)}`, M + W - 2, y + 5, { align: "right" });
       y += 8;
     }
 

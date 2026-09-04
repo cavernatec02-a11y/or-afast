@@ -16,10 +16,14 @@ export default function NumberInput({ value, onChange, className, placeholder, p
   }, [value]);
 
   const handleChange = (e) => {
-    let s = e.target.value.replace(/[^\d.,-]/g, "").replace(/,/g, ".");
+    let s = e.target.value.replace(/[^\d.,-]/g, "");
     if (!allowNegative) s = s.replace(/-/g, "");
-    const dot = s.indexOf(".");
-    if (dot !== -1) s = s.slice(0, dot + 1) + s.slice(dot + 1).replace(/\./g, "");
+    // Formato brasileiro: vírgula = decimal, ponto = milhar
+    if (s.includes(",")) {
+      s = s.replace(/\./g, "").replace(/,/g, ".");
+    } else if ((s.match(/\./g) || []).length > 1) {
+      s = s.replace(/\./g, "");
+    }
     setStr(s);
     const n = s === "" || s === "-" || s === "." ? 0 : Number(s);
     onChange(Number.isNaN(n) ? 0 : n);

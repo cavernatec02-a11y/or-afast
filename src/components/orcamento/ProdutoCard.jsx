@@ -10,8 +10,13 @@ export default function ProdutoCard({ produto, componentes, comerciais, acoOptio
   const totais = calcProdutoTotais(produto.uid, componentes, comerciais, precoKg);
 
   const defaultAco = () => acoOptions.find((a) => a.codigo === "# 14 (2,00)") || acoOptions[0];
+  const gerarDescricao = (tipo, nome) => {
+    const label = (nome || tipo || "Produto").toUpperCase();
+    return `Fornecimento de ${label}. Estrutura metálica para armazenagem industrial conforme normas técnicas.`;
+  };
   const setTipo = (tipo) => {
-    onChangeMeta({ ...produto, tipo_produto: tipo });
+    const descricao = produto.descricao || gerarDescricao(tipo, produto.nome);
+    onChangeMeta({ ...produto, tipo_produto: tipo, descricao });
     if (componentes.length === 0) {
       const aco = defaultAco();
       const preset = (PRODUTO_PRESETS[tipo] || []).map((p) => recalcComponente({ uid: newUid(), produto_id: produto.uid, ...p, custo_aco_id: aco?.id || "", peso_especifico: aco?.peso_especifico || 0 }));
@@ -57,6 +62,15 @@ export default function ProdutoCard({ produto, componentes, comerciais, acoOptio
 
       {aberto && (
         <div className="p-4 space-y-4">
+          <div>
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5 block dark:text-slate-400">Descrição do Item / Especificação Técnica</label>
+            <textarea
+              className="input-sm min-h-[80px] resize-y"
+              value={produto.descricao || ""}
+              onChange={(e) => onChangeMeta({ ...produto, descricao: e.target.value })}
+              placeholder="Ex.: Fornecimento de 2 módulos Prateleira Porta facas, com as seguintes dimensões (1475x1200x4590mm) com 2 níveis de longarinas aptos a suportar uma carga uniformemente distribuída de 2000kg/par..."
+            />
+          </div>
           <div>
             <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1.5 dark:text-slate-400"><Layers size={14} /> Peças estruturais</h4>
             <ComponenteGrid componentes={componentes} acoOptions={acoOptions} precoKg={precoKg} onChange={handleComponentes} />
