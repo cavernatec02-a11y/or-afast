@@ -126,9 +126,9 @@ export async function gerarPDFOrcamento(orc) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
   doc.setTextColor(...DARK);
-  doc.text("PROPOSTA COMERCIAL", M + W / 2, 42, { align: "center" });
+  doc.text("PROPOSTA COMERCIAL", M + W / 2, 48, { align: "center" });
 
-  let y = 50;
+  let y = 56;
 
   // ── DADOS DO ORÇAMENTO ───────────────────────────────────────────────────────
   doc.setFillColor(...LIGHT);

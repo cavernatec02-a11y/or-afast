@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, FileText, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, FileText, Pencil, Trash2, Search, ChevronDown } from "lucide-react";
 import { toast } from "react-hot-toast";
 import Navbar from "@/components/Navbar";
 import { formatMoeda, formatPeso } from "@/lib/pricingEngine";
@@ -19,6 +19,12 @@ export default function Orcamentos() {
     orcamentosStore.delete(id);
     setOrcamentos((o) => o.filter((x) => x.id !== id));
     toast.success("Orçamento excluído.");
+  };
+
+  const mudarStatus = (id, status) => {
+    orcamentosStore.update(id, { status });
+    setOrcamentos((o) => o.map((x) => (x.id === id ? { ...x, status } : x)));
+    toast.success(`Status alterado para "${status}".`);
   };
 
   const filtrados = orcamentos.filter((o) =>
@@ -57,7 +63,7 @@ export default function Orcamentos() {
                       </p>
                     </div>
                   </div>
-                  <StatusBadge status={o.status} />
+                  <StatusSelector status={o.status} onChange={(s) => mudarStatus(o.id, s)} />
                 </div>
                 <div className="mt-4 space-y-1.5 text-sm">
                   <Row label="Cliente" value={o.cliente_nome || "—"} />
@@ -90,9 +96,23 @@ function Row({ label, value, strong }) {
     </div>
   );
 }
-function StatusBadge({ status }) {
+function StatusSelector({ status, onChange }) {
   const map = { rascunho: "bg-amber-50 text-amber-700", enviado: "bg-blue-50 text-blue-700", aprovado: "bg-emerald-50 text-emerald-700", recusado: "bg-red-50 text-red-700" };
-  return <span className={`text-xs font-medium px-2 py-1 rounded-full ${map[status] || "bg-slate-100 text-slate-600"}`}>{status || "rascunho"}</span>;
+  return (
+    <div className="relative">
+      <select
+        value={status || "rascunho"}
+        onChange={(e) => onChange(e.target.value)}
+        className={`appearance-none text-xs font-medium pl-2.5 pr-6 py-1 rounded-full border-0 cursor-pointer ${map[status] || "bg-slate-100 text-slate-600"}`}
+      >
+        <option value="rascunho">rascunho</option>
+        <option value="enviado">enviado</option>
+        <option value="aprovado">aprovado</option>
+        <option value="recusado">recusado</option>
+      </select>
+      <ChevronDown size={12} className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-60" />
+    </div>
+  );
 }
 function EmptyState() {
   return (
