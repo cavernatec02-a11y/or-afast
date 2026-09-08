@@ -81,6 +81,20 @@ export const PRODUTO_PRESETS = {
 };
 export const TIPOS_PRODUTO = Object.keys(PRODUTO_PRESETS);
 
+// Descrições técnicas pré-definidas por tipo de produto (preenchimento automático)
+export const DESCRICOES_PRODUTO = {
+  "P.Pallets": "Fornecimento de Porta-Palete convencional, estrutura metálica para armazenagem de paletes, composta por colunas, sapatas, travessas, diagonais e garras de fixação. Capacidade de carga conforme projeto técnico aprovado.",
+  "Drive In": "Fornecimento de sistema Drive-In, estrutura metálica de alta densidade para armazenagem de paletes, composta por colunas, sapatas especiais Drive-In, travessas e diagonais. Ideal para produtos com baixa rotatividade e alta densidade.",
+  "Estantes": "Fornecimento de Estante para picking, estrutura metálica composta por colunas, longarinas, travessas e diagonais. Apta a suportar carga uniformemente distribuída conforme especificação técnica.",
+  "Cantilever": "Fornecimento de Cantilever pesado, estrutura metálica para armazenagem de cargas longas (tubos, perfis, chapas), composta por colunas, braços e bases reforçadas.",
+  "Cant. Leve": "Fornecimento de Cantilever leve, estrutura metálica para armazenagem de cargas longas de menor peso, composta por colunas e braços reguláveis em altura.",
+  "Painel TL + Portão TL": "Fornecimento de Painel TL e Portão TL, estrutura metálica para fechamento perimetral e controle de acesso de áreas industriais, composta por montantes e travessas.",
+  "Mezanino": "Fornecimento de Mezanino industrial, estrutura metálica elevada para aproveitamento vertical do espaço, composta por colunas, vigas principais e secundárias e diagonais de contraventamento.",
+  "Racks": "Fornecimento de Rack para armazenagem, estrutura metálica composta por colunas e longarinas. Capacidade de carga conforme projeto técnico aprovado.",
+  "Plano Fl.Rack": "Fornecimento de Flow Rack, estrutura metálica para armazenagem dinâmica com trilhos de rolamento por gravidade, composta por colunas, trilhos e travessas.",
+  "P.bobina": "Fornecimento de Porta-Bobina, estrutura metálica para armazenagem de bobinas de aço, composta por colunas e selas de apoio.",
+};
+
 // UID estável para keys de React (evita inputs com estado local trocado de linha)
 let _uid = 0;
 export function newUid() { _uid += 1; return `uid_${Date.now().toString(36)}_${_uid.toString(36)}`; }

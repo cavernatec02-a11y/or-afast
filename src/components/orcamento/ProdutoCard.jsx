@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Trash2, ChevronDown, ChevronUp, Layers, Boxes } from "lucide-react";
 import ComponenteGrid from "@/components/orcamento/ComponenteGrid";
 import ComponenteComercialGrid from "@/components/orcamento/ComponenteComercialGrid";
-import { TIPOS_PRODUTO, PRODUTO_PRESETS, recalcComponente, calcProdutoTotais, newUid, formatMoeda, formatPeso } from "@/lib/pricingEngine";
+import { TIPOS_PRODUTO, PRODUTO_PRESETS, DESCRICOES_PRODUTO, recalcComponente, calcProdutoTotais, newUid, formatMoeda, formatPeso } from "@/lib/pricingEngine";
 
 // Um produto dentro do orçamento. As peças vivem em arrays flat no parent, filtradas por produto_id.
 export default function ProdutoCard({ produto, componentes, comerciais, acoOptions, catalogoComercial, precoKg, onChangeMeta, onChangeComponentes, onChangeComerciais, onRemove }) {
@@ -10,12 +10,9 @@ export default function ProdutoCard({ produto, componentes, comerciais, acoOptio
   const totais = calcProdutoTotais(produto.uid, componentes, comerciais, precoKg);
 
   const defaultAco = () => acoOptions.find((a) => a.codigo === "# 14 (2,00)") || acoOptions[0];
-  const gerarDescricao = (tipo, nome) => {
-    const label = (nome || tipo || "Produto").toUpperCase();
-    return `Fornecimento de ${label}. Estrutura metálica para armazenagem industrial conforme normas técnicas.`;
-  };
   const setTipo = (tipo) => {
-    const descricao = produto.descricao || gerarDescricao(tipo, produto.nome);
+    // Sempre preenche a descrição técnica pré-definida do tipo selecionado
+    const descricao = DESCRICOES_PRODUTO[tipo] || produto.descricao || "";
     onChangeMeta({ ...produto, tipo_produto: tipo, descricao });
     if (componentes.length === 0) {
       const aco = defaultAco();
@@ -38,12 +35,20 @@ export default function ProdutoCard({ produto, componentes, comerciais, acoOptio
     <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden dark:border-slate-700 dark:bg-slate-900">
       <div className="flex flex-wrap items-center gap-3 p-4 bg-slate-50/70 border-b border-slate-100 dark:bg-slate-800/70 dark:border-slate-700">
         <div className="w-9 h-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shrink-0">{produto.indexLabel}</div>
-        <div className="flex flex-col gap-1 flex-1 min-w-[220px]">
-          <label className="text-xs font-medium text-slate-500 uppercase tracking-wide dark:text-slate-400">Tipo de produto</label>
-          <select className="input-sm max-w-xs" value={produto.tipo_produto || ""} onChange={(e) => setTipo(e.target.value)}>
-            <option value="">Selecione...</option>
-            {TIPOS_PRODUTO.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
+        <div className="flex flex-col gap-1 flex-1 min-w-[280px]">
+          <label className="text-xs font-medium text-slate-500 uppercase tracking-wide dark:text-slate-400">Tipo de produto — clique para selecionar</label>
+          <div className="flex flex-wrap gap-1.5">
+            {TIPOS_PRODUTO.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTipo(t)}
+                className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition ${produto.tipo_produto === t ? "bg-primary text-primary-foreground" : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"}`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-slate-500 uppercase tracking-wide dark:text-slate-400">Nome (opcional)</label>
