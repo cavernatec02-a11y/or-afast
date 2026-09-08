@@ -201,7 +201,37 @@ export async function gerarPDFOrcamento(orc) {
           c.descricao || "—", c.quantidade ?? 0,
         ], i % 2 === 0);
       });
-      y += 6;
+      y += 4;
+    }
+
+    // Subtotal do produto — Qtde / Valor Unit. / Valor Total (padrão do resumo)
+    const valorAco = comps.reduce((s, c) => s + (Number(c.peso_total) || 0), 0) * (Number(orc.preco_aco_kg) || 0);
+    const valorAcessorios = coms.reduce((s, c) => s + (Number(c.total) || 0), 0);
+    const valorProduto = valorAco + valorAcessorios;
+    if (comps.length > 0 || coms.length > 0) {
+      const colsSub = [
+        { label: "Qtde", w: 40, align: "right" },
+        { label: "Valor Unit.", w: 70, align: "right" },
+        { label: "Valor Total", w: 70, align: "right" },
+      ];
+      y = drawTableHeader(doc, y, colsSub);
+      y = checkY(doc, y, 7);
+      doc.setFillColor(...LIGHT);
+      doc.rect(M, y, W, 7, "F");
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(...DARK);
+      let sx = M;
+      doc.text("1 un", sx + colsSub[0].w - 2, y + 5, { align: "right" });
+      sx += colsSub[0].w;
+      doc.text(formatMoeda(valorProduto), sx + colsSub[1].w - 2, y + 5, { align: "right" });
+      sx += colsSub[1].w;
+      doc.setFont("helvetica", "bold");
+      doc.text(formatMoeda(valorProduto), sx + colsSub[2].w - 2, y + 5, { align: "right" });
+      doc.setDrawColor(...BORDER);
+      doc.setLineWidth(0.1);
+      doc.line(M, y + 7, M + W, y + 7);
+      y += 11;
     }
   });
 
