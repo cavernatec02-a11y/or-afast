@@ -28,7 +28,7 @@ export default function Orcamentos() {
   };
 
   const filtrados = orcamentos.filter((o) =>
-    [o.titulo, o.cliente_nome, ...(o.produtos || []).map((p) => p.tipo_produto)].join(" ")
+    [o.titulo, o.cliente_nome, o.numero_projeto, ...(o.produtos || []).map((p) => p.tipo_produto)].join(" ")
       .toLowerCase().includes(busca.toLowerCase())
   );
 
@@ -43,7 +43,7 @@ export default function Orcamentos() {
           </div>
           <div className="relative ml-auto max-w-sm w-full">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por título ou cliente..." className="input pl-9" />
+            <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por cliente, projeto ou título..." className="input pl-9" />
           </div>
         </div>
 

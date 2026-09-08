@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { Trash2, ChevronDown, ChevronUp, Layers, Boxes } from "lucide-react";
+import { Trash2, ChevronDown, ChevronUp, Layers, Boxes, Bookmark } from "lucide-react";
+import { toast } from "react-hot-toast";
 import ComponenteGrid from "@/components/orcamento/ComponenteGrid";
 import ComponenteComercialGrid from "@/components/orcamento/ComponenteComercialGrid";
 import { TIPOS_PRODUTO, PRODUTO_PRESETS, DESCRICOES_PRODUTO, recalcComponente, calcProdutoTotais, newUid, formatMoeda, formatPeso } from "@/lib/pricingEngine";
 
 // Um produto dentro do orçamento. As peças vivem em arrays flat no parent, filtradas por produto_id.
-export default function ProdutoCard({ produto, componentes, comerciais, acoOptions, catalogoComercial, precoKg, onChangeMeta, onChangeComponentes, onChangeComerciais, onRemove }) {
+export default function ProdutoCard({ produto, componentes, comerciais, acoOptions, catalogoComercial, precoKg, onChangeMeta, onChangeComponentes, onChangeComerciais, onRemove, onSaveTemplate }) {
   const [aberto, setAberto] = useState(true);
   const totais = calcProdutoTotais(produto.uid, componentes, comerciais, precoKg);
 
@@ -30,6 +31,23 @@ export default function ProdutoCard({ produto, componentes, comerciais, acoOptio
 
   const handleComponentes = (comps) => onChangeComponentes(comps.map((c) => ({ ...c, produto_id: c.produto_id || produto.uid })));
   const handleComerciais = (coms) => onChangeComerciais(coms.map((c) => ({ ...c, produto_id: c.produto_id || produto.uid })));
+
+  const salvarTemplate = () => {
+    if (!produto.tipo_produto && componentes.length === 0) {
+      toast.error("Selecione um tipo de produto antes de salvar como template.");
+      return;
+    }
+    const nome = prompt("Nome do template:", produto.tipo_produto || produto.nome || "Template");
+    if (!nome) return;
+    onSaveTemplate({
+      nome,
+      tipo_produto: produto.tipo_produto || "",
+      descricao: produto.descricao || "",
+      componentes: componentes.map(({ uid, ...c }) => c),
+      comerciais: comerciais.map(({ uid, ...c }) => c),
+    });
+    toast.success("Template salvo!");
+  };
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden dark:border-slate-700 dark:bg-slate-900">
@@ -59,6 +77,7 @@ export default function ProdutoCard({ produto, componentes, comerciais, acoOptio
           <div className="text-sm font-semibold text-slate-900 tabular-nums dark:text-slate-100">{formatPeso(totais.peso)} kg · {formatMoeda(totais.custoAco)}</div>
         </div>
         <div className="flex items-center gap-1">
+          <button onClick={salvarTemplate} className="text-xs font-medium text-slate-500 hover:text-slate-900 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700" title="Salvar como template"><Bookmark size={14} /></button>
           <button onClick={recarregarPreset} className="text-xs font-medium text-slate-500 hover:text-slate-900 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700" title="Recarregar peças padrão">Recarregar</button>
           <button onClick={() => setAberto(!aberto)} className="p-2 rounded-md text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700">{aberto ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</button>
           <button onClick={onRemove} className="p-2 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30" title="Remover produto"><Trash2 size={16} /></button>

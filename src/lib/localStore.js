@@ -5,6 +5,7 @@ const KEY_ORC = "orcaRipresa_orcamentos";
 const KEY_ACO = "orcaRipresa_acos";
 const KEY_CLI = "orcaRipresa_clientes";
 const KEY_COM = "orcaRipresa_comerciais";
+const KEY_TPL = "orcaRipresa_templates";
 
 function load(key) {
   try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch { return []; }
@@ -97,4 +98,16 @@ export const catalogoStore = {
     return novo;
   },
   delete: (id) => save(KEY_COM, load(KEY_COM).filter((c) => c.id !== id)),
+};
+
+// ─── Templates de Produtos ─────────────────────────────────────────────────────
+export const templatesStore = {
+  list: () => load(KEY_TPL).sort((a, b) => (b.created_at || 0) - (a.created_at || 0)),
+  create: (data) => {
+    const lista = load(KEY_TPL);
+    const novo = { ...data, id: newId(), created_at: Date.now() };
+    save(KEY_TPL, [...lista, novo]);
+    return novo;
+  },
+  delete: (id) => save(KEY_TPL, load(KEY_TPL).filter((t) => t.id !== id)),
 };
