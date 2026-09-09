@@ -1,10 +1,10 @@
 import React from "react";
 import { TrendingUp, AlertTriangle, CheckCircle2, Info, Receipt } from "lucide-react";
-import { LUCRO_PRESUMIDO, formatMoeda, formatPercent, statusMargem } from "@/lib/pricingEngine";
+import { formatMoeda, formatPercent, statusMargem } from "@/lib/pricingEngine";
 
 export default function FormacaoPreco({
   custoAco, custoAcessorios, montagem, frete, cobrarMontagem, cobrarFrete,
-  custoEmpresa, totalCliente, carga, comissaoPct, comissaoValor, impostosValor,
+  custoEmpresa, totalCliente, impostosPct, comissaoPct, comissaoValor, impostosValor,
   resultado, margemMinima, margemAdequada, precoMinimo, precoAdequado, onUsarPreco,
 }) {
   const status = statusMargem(resultado.margem, margemMinima, margemAdequada);
@@ -37,15 +37,10 @@ export default function FormacaoPreco({
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
-          <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2 dark:text-slate-100"><Info size={16} className="text-slate-500" /> Tributos (Lucro Presumido) e Resultado</h3>
-          <Line label="PIS (0,65%)" value={formatPercent(LUCRO_PRESUMIDO.pis)} />
-          <Line label="COFINS (3,00%)" value={formatPercent(LUCRO_PRESUMIDO.cofins)} />
-          <Line label="CSLL (0,72%)" value={formatPercent(LUCRO_PRESUMIDO.csll)} />
-          <Line label="IRPJ + Adicional (2,00%)" value={formatPercent(LUCRO_PRESUMIDO.irpj + LUCRO_PRESUMIDO.irpj_adicional)} />
-          <Line label="ICMS" value={formatPercent(carga.icms)} />
-          <div className="border-t border-slate-200 my-2" />
-          <Line label="Carga Tributária Total" value={formatPercent(carga.total)} />
+          <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2 dark:text-slate-100"><Info size={16} className="text-slate-500" /> Tributos e Resultado</h3>
+          <Line label={`Impostos (${Number(impostosPct || 0).toFixed(2)}%)`} value="Editável pelo usuário" />
           <Line label={`Comissão (${comissaoPct}%)`} value={formatMoeda(comissaoValor)} />
+          <div className="border-t border-slate-200 my-2" />
           <Line label="Impostos sobre a Venda" value={formatMoeda(impostosValor)} />
           <div className="border-t border-slate-200 my-2" />
           <Line label="Lucro Líquido" value={formatMoeda(resultado.lucro)} strong tone={resultado.lucro >= 0 ? "emerald" : "red"} />
@@ -54,7 +49,7 @@ export default function FormacaoPreco({
 
       <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
         <h3 className="text-sm font-semibold text-slate-900 mb-1 flex items-center gap-2 dark:text-slate-100"><Receipt size={16} className="text-slate-500" /> Sugestão de Preço de Venda</h3>
-        <p className="text-xs text-slate-500 mb-3">Preço de venda = Custo da empresa ÷ (1 − Margem − Carga Tributária − Comissão). Use como referência e ajuste o valor na barra inferior.</p>
+        <p className="text-xs text-slate-500 mb-3">Preço de venda = Custo da empresa ÷ (1 − Margem% − Impostos% − Comissão%). Use como referência e ajuste o valor na barra inferior.</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <SuggestionCard tone="amber" label={`Preço Mínimo (margem ${margemMinima}%)`} value={formatMoeda(precoMinimo)} onUse={() => onUsarPreco(precoMinimo)} />
           <SuggestionCard tone="emerald" label={`Preço Adequado (margem ${margemAdequada}%)`} value={formatMoeda(precoAdequado)} onUse={() => onUsarPreco(precoAdequado)} />

@@ -13,7 +13,7 @@ import { gerarPDFOrcamento } from "@/lib/pdfOrcamento";
 import { orcamentosStore, clientesStore, acoStore, catalogoStore } from "@/lib/localStore";
 import {
   calcTotaisOrcamento, calcCustoEmpresa, calcTotalCliente,
-  calcCargaTributaria, calcPrecoVendaParaMargem, calcResultadoVenda, newUid,
+  calcPrecoVendaParaMargem, calcResultadoVenda, newUid,
 } from "@/lib/pricingEngine";
 
 const novoProduto = () => ({ uid: newUid(), tipo_produto: "", nome: "", descricao: "" });
@@ -40,6 +40,7 @@ export default function NovoOrcamento() {
   const [cobrarMontagem, setCobrarMontagem] = useState(false);
   const [cobrarFrete, setCobrarFrete] = useState(false);
   const [comissao, setComissao] = useState(0);
+  const [impostosPercent, setImpostosPercent] = useState(13.37);
   const [margemMinima, setMargemMinima] = useState(15);
   const [margemAdequada, setMargemAdequada] = useState(30);
   const [valorVenda, setValorVenda] = useState(0);
@@ -77,6 +78,7 @@ export default function NovoOrcamento() {
     setCobrarMontagem(!!orc.cobrar_montagem);
     setCobrarFrete(!!orc.cobrar_frete);
     setComissao(orc.comissao_percentual ?? 0);
+    setImpostosPercent(orc.carga_tributaria ? orc.carga_tributaria * 100 : 13.37);
     setMargemMinima(orc.margem_minima ?? 15);
     setMargemAdequada(orc.margem_adequada ?? 30);
     setValorVenda(orc.valor_venda ?? 0);
@@ -98,11 +100,10 @@ export default function NovoOrcamento() {
     () => calcCustoEmpresa(totais.custo_total_aco, totais.custo_acessorios, montagem, frete, cobrarMontagem, cobrarFrete),
     [totais, montagem, frete, cobrarMontagem, cobrarFrete]
   );
-  const carga = useMemo(() => calcCargaTributaria(form.uf), [form.uf]);
-  const resultado = useMemo(() => calcResultadoVenda(valorVenda, custoEmpresa, carga.total, comissao), [valorVenda, custoEmpresa, carga, comissao]);
+  const resultado = useMemo(() => calcResultadoVenda(valorVenda, custoEmpresa, impostosPercent, comissao), [valorVenda, custoEmpresa, impostosPercent, comissao]);
   const totalCliente = useMemo(() => calcTotalCliente(valorVenda, montagem, frete, cobrarMontagem, cobrarFrete), [valorVenda, montagem, frete, cobrarMontagem, cobrarFrete]);
-  const precoMinimo = useMemo(() => calcPrecoVendaParaMargem(custoEmpresa, margemMinima, carga.total, comissao), [custoEmpresa, margemMinima, carga, comissao]);
-  const precoAdequado = useMemo(() => calcPrecoVendaParaMargem(custoEmpresa, margemAdequada, carga.total, comissao), [custoEmpresa, margemAdequada, carga, comissao]);
+  const precoMinimo = useMemo(() => calcPrecoVendaParaMargem(custoEmpresa, margemMinima, impostosPercent, comissao), [custoEmpresa, margemMinima, impostosPercent, comissao]);
+  const precoAdequado = useMemo(() => calcPrecoVendaParaMargem(custoEmpresa, margemAdequada, impostosPercent, comissao), [custoEmpresa, margemAdequada, impostosPercent, comissao]);
 
   useEffect(() => {
     if (!id && custoEmpresa > 0 && !valorVenda) setValorVenda(Number(precoAdequado.toFixed(2)));
@@ -127,12 +128,13 @@ export default function NovoOrcamento() {
     montagem, cobrar_montagem: cobrarMontagem,
     frete, cobrar_frete: cobrarFrete,
     comissao_percentual: comissao,
+    impostos_percent: impostosPercent,
     margem_minima: margemMinima,
     margem_adequada: margemAdequada,
     valor_venda: valorVenda,
     custo_empresa: custoEmpresa,
     total_cliente: totalCliente,
-    carga_tributaria: carga.total,
+    carga_tributaria: impostosPercent / 100,
     impostos_valor: resultado.impostos,
     comissao_valor: resultado.comissao,
     margem_real: resultado.margem,
@@ -207,6 +209,7 @@ export default function NovoOrcamento() {
             montagem={montagem} setMontagem={setMontagem} cobrarMontagem={cobrarMontagem} setCobrarMontagem={setCobrarMontagem}
             frete={frete} setFrete={setFrete} cobrarFrete={cobrarFrete} setCobrarFrete={setCobrarFrete}
             comissao={comissao} setComissao={setComissao}
+            impostos={impostosPercent} setImpostos={setImpostosPercent}
             margemMinima={margemMinima} setMargemMinima={setMargemMinima}
             margemAdequada={margemAdequada} setMargemAdequada={setMargemAdequada}
             comissaoValor={resultado.comissao}
@@ -218,7 +221,7 @@ export default function NovoOrcamento() {
             custoAco={totais.custo_total_aco} custoAcessorios={totais.custo_acessorios}
             montagem={montagem} frete={frete} cobrarMontagem={cobrarMontagem} cobrarFrete={cobrarFrete}
             custoEmpresa={custoEmpresa} totalCliente={totalCliente}
-            carga={carga} comissaoPct={comissao} comissaoValor={resultado.comissao} impostosValor={resultado.impostos}
+            impostosPct={impostosPercent} comissaoPct={comissao} comissaoValor={resultado.comissao} impostosValor={resultado.impostos}
             resultado={resultado} margemMinima={margemMinima} margemAdequada={margemAdequada}
             precoMinimo={precoMinimo} precoAdequado={precoAdequado}
             onUsarPreco={(v) => setValorVenda(Number(v.toFixed(2)))}

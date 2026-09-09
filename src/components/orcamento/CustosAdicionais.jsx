@@ -1,5 +1,5 @@
 import React from "react";
-import { Truck, Wrench, UserCheck, Target } from "lucide-react";
+import { Truck, Wrench, UserCheck, Target, Receipt } from "lucide-react";
 import NumberInput from "@/components/NumberInput";
 import { formatMoeda } from "@/lib/pricingEngine";
 
@@ -7,6 +7,7 @@ export default function CustosAdicionais({
   montagem, setMontagem, cobrarMontagem, setCobrarMontagem,
   frete, setFrete, cobrarFrete, setCobrarFrete,
   comissao, setComissao,
+  impostos, setImpostos,
   margemMinima, setMargemMinima,
   margemAdequada, setMargemAdequada,
   comissaoValor,
@@ -17,6 +18,7 @@ export default function CustosAdicionais({
         cobrar={cobrarMontagem} setCobrar={setCobrarMontagem} cobrarLabel="Cobrar do cliente" />
       <CostCard icon={<Truck size={16} />} label="Frete (R$)" value={frete} onChange={setFrete}
         cobrar={cobrarFrete} setCobrar={setCobrarFrete} cobrarLabel="Cobrar do cliente" />
+      <SimpleCard icon={<Receipt size={16} />} label="Impostos (%)" value={impostos} onChange={setImpostos} suffix="%" hint="Editável — PIS, COFINS, CSLL, IRPJ, ICMS" />
       <SimpleCard icon={<UserCheck size={16} />} label="Comissão Vendedor (%)" value={comissao} onChange={setComissao} suffix="%" hint={formatMoeda(comissaoValor)} />
       <SimpleCard icon={<Target size={16} />} label="Margem Mínima (%)" value={margemMinima} onChange={setMargemMinima} suffix="%" tone="amber" />
       <SimpleCard icon={<Target size={16} />} label="Margem Adequada (%)" value={margemAdequada} onChange={setMargemAdequada} suffix="%" tone="emerald" />

@@ -148,18 +148,20 @@ export function calcTotalCliente(valorVenda, montagem, frete, cobrarMontagem, co
   return (Number(valorVenda) || 0) + m + f;
 }
 
-// Preço de venda para atingir margem M: PV = custo / (1 - margem - carga - comissao)
-export function calcPrecoVendaParaMargem(custoTotal, margemPct, cargaTotal, comissaoPct) {
-  const denom = 1 - (Number(margemPct) || 0) / 100 - (Number(cargaTotal) || 0) - (Number(comissaoPct) || 0) / 100;
+// Preço de venda para atingir margem M: PV = custo / (1 - margem% - impostos% - comissao%)
+// Markup Divisor: garante que a margem seja real sobre o preço de venda.
+export function calcPrecoVendaParaMargem(custoTotal, margemPct, impostosPct, comissaoPct) {
+  const denom = 1 - (Number(margemPct) || 0) / 100 - (Number(impostosPct) || 0) / 100 - (Number(comissaoPct) || 0) / 100;
   if (denom <= 0) return Infinity;
   return (Number(custoTotal) || 0) / denom;
 }
 
 // Resultado dado o valor de venda: margem real e lucro líquido
-export function calcResultadoVenda(valorVenda, custoEmpresa, cargaTotal, comissaoPct) {
+// impostosPct e comissaoPct são porcentagens (ex: 13.37 = 13,37%)
+export function calcResultadoVenda(valorVenda, custoEmpresa, impostosPct, comissaoPct) {
   const vv = Number(valorVenda) || 0;
   const comissao = vv * ((Number(comissaoPct) || 0) / 100);
-  const impostos = vv * (Number(cargaTotal) || 0);
+  const impostos = vv * ((Number(impostosPct) || 0) / 100);
   const lucro = vv - (Number(custoEmpresa) || 0) - impostos - comissao;
   const margem = vv > 0 ? lucro / vv : 0;
   return { valorVenda: vv, comissao, impostos, lucro, margem };
