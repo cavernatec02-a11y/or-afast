@@ -16,7 +16,6 @@ import Orcamentos from '@/pages/Orcamentos';
 import NovoOrcamento from '@/pages/NovoOrcamento';
 import TabelaAco from '@/pages/TabelaAco';
 import Clientes from '@/pages/Clientes';
-import Calculadora from '@/pages/Calculadora';
 
 const AuthenticatedApp = () => {
   return (
@@ -26,7 +25,6 @@ const AuthenticatedApp = () => {
       <Route path="/orcamento/:id" element={<NovoOrcamento />} />
       <Route path="/tabela-aco" element={<TabelaAco />} />
       <Route path="/clientes" element={<Clientes />} />
-      <Route path="/calculadora" element={<Calculadora />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
