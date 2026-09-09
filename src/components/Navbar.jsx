@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Image } from "@/components/ui/image";
-import { FileText, Users, Layers, Plus, ArrowLeft, ArrowRight, Home } from "lucide-react";
+import { FileText, Users, Layers, Plus, ArrowLeft, ArrowRight, Home, Calculator } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 
 const LOGO_URL = "https://media.base44.com/images/public/6a95cd709d1eb3285a3e45a0/ae1c1268b_WhatsAppImage2026-07-20at152818.jpeg";
@@ -12,6 +12,7 @@ export default function Navbar() {
   const links = [
     { to: "/", label: "Orçamentos", icon: <FileText size={16} /> },
     { to: "/clientes", label: "Clientes", icon: <Users size={16} /> },
+    { to: "/calculadora", label: "Calculadora", icon: <Calculator size={16} /> },
     { to: "/tabela-aco", label: "Tabela de Aço", icon: <Layers size={16} /> },
   ];
   return (
