@@ -108,14 +108,16 @@ export default function NovoOrcamento() {
     [componentes]
   );
 
+  // Cálculo unificado: ambos os modos usam a mesma base (peso + acessórios + preço/kg).
+  // A única diferença é a ORIGEM do peso: componentes (tela 01) ou peso direto (tela 02).
   const totais = useMemo(() => {
-    if (modoCalculo === "peso_direto") {
-      const peso = Number(Number(pesoDireto || 0).toFixed(5));
-      const custoAco = Number((peso * (Number(precoAcoKg) || 0)).toFixed(2));
-      return { peso_total_aco: peso, custo_total_aco: custoAco, custo_acessorios: 0 };
-    }
-    return calcTotaisOrcamento(componentes, comerciais, precoAcoKg);
-  }, [modoCalculo, pesoDireto, componentes, comerciais, precoAcoKg]);
+    const peso = modoCalculo === "peso_direto"
+      ? Number(Number(pesoDireto || 0).toFixed(5))
+      : pesoComponentes;
+    const custoAco = Number((peso * (Number(precoAcoKg) || 0)).toFixed(2));
+    const custo_acessorios = Number((comerciais || []).reduce((s, c) => s + (Number(c.total) || 0), 0).toFixed(2));
+    return { peso_total_aco: peso, custo_total_aco: custoAco, custo_acessorios };
+  }, [modoCalculo, pesoDireto, pesoComponentes, comerciais, precoAcoKg]);
   const custoEmpresa = useMemo(
     () => calcCustoEmpresa(totais.custo_total_aco, totais.custo_acessorios, montagem, frete, cobrarMontagem, cobrarFrete),
     [totais, montagem, frete, cobrarMontagem, cobrarFrete]
