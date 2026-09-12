@@ -5,6 +5,7 @@ import { toast } from "react-hot-toast";
 import Navbar from "@/components/Navbar";
 import ClienteForm from "@/components/orcamento/ClienteForm";
 import ProdutosSection from "@/components/orcamento/ProdutosSection";
+import PesoDiretoCard from "@/components/orcamento/PesoDiretoCard";
 import CustoAcoCard from "@/components/orcamento/CustoAcoCard";
 import CustosAdicionais from "@/components/orcamento/CustosAdicionais";
 import FormacaoPreco from "@/components/orcamento/FormacaoPreco";
@@ -35,6 +36,8 @@ export default function NovoOrcamento() {
   const [produtos, setProdutos] = useState([]);
   const [componentes, setComponentes] = useState([]);
   const [comerciais, setComerciais] = useState([]);
+  const [modoCalculo, setModoCalculo] = useState("componentes"); // "componentes" | "peso_direto"
+  const [pesoDireto, setPesoDireto] = useState(0);
   const [precoAcoKg, setPrecoAcoKg] = useState(15);
   const [montagem, setMontagem] = useState(0);
   const [frete, setFrete] = useState(0);
@@ -74,6 +77,8 @@ export default function NovoOrcamento() {
     setProdutos(prods.map((p) => ({ uid: p.id || newUid(), tipo_produto: p.tipo_produto || "", nome: p.nome || "", descricao: p.descricao || "" })));
     setComponentes((orc.componentes || []).map((c) => ({ ...c, uid: c.uid || newUid() })));
     setComerciais((orc.componentes_comerciais || []).map((c) => ({ ...c, uid: c.uid || newUid() })));
+    setModoCalculo(orc.modo_calculo || "componentes");
+    setPesoDireto(orc.peso_direto || 0);
     setPrecoAcoKg(orc.preco_aco_kg ?? 15);
     setMontagem(orc.montagem ?? 0);
     setFrete(orc.frete ?? 0);
@@ -97,7 +102,14 @@ export default function NovoOrcamento() {
   const onSelectCliente = (c) =>
     setForm((f) => ({ ...f, cliente_id: c.id, cliente_nome: c.nome, contato: c.contato || "", telefone: c.telefone || "", email: c.email || "" }));
 
-  const totais = useMemo(() => calcTotaisOrcamento(componentes, comerciais, precoAcoKg), [componentes, comerciais, precoAcoKg]);
+  const totais = useMemo(() => {
+    if (modoCalculo === "peso_direto") {
+      const peso = Number(Number(pesoDireto || 0).toFixed(5));
+      const custoAco = Number((peso * (Number(precoAcoKg) || 0)).toFixed(2));
+      return { peso_total_aco: peso, custo_total_aco: custoAco, custo_acessorios: 0 };
+    }
+    return calcTotaisOrcamento(componentes, comerciais, precoAcoKg);
+  }, [modoCalculo, pesoDireto, componentes, comerciais, precoAcoKg]);
   const custoEmpresa = useMemo(
     () => calcCustoEmpresa(totais.custo_total_aco, totais.custo_acessorios, montagem, frete, cobrarMontagem, cobrarFrete),
     [totais, montagem, frete, cobrarMontagem, cobrarFrete]
@@ -123,6 +135,8 @@ export default function NovoOrcamento() {
     produtos: produtos.map((p) => ({ id: p.uid, tipo_produto: p.tipo_produto, nome: p.nome, descricao: p.descricao || "" })),
     componentes: componentes.map(({ uid, ...c }) => c),
     componentes_comerciais: comerciais.map(({ uid, ...c }) => c),
+    modo_calculo: modoCalculo,
+    peso_direto: pesoDireto,
     preco_aco_kg: precoAcoKg,
     peso_total_aco: totais.peso_total_aco,
     custo_total_aco: totais.custo_total_aco,
@@ -195,12 +209,32 @@ export default function NovoOrcamento() {
           </div>
         </Section>
 
-        <Section n="2" icon={<Package size={18} />} title="Produtos do orçamento" subtitle="Adicione um ou mais produtos (ex.: porta-palete + estante) para o mesmo cliente.">
-          <ProdutosSection
-            produtos={produtos} componentes={componentes} comerciais={comerciais}
-            acoOptions={acoOptions} catalogoComercial={catalogoComercial} precoKg={precoAcoKg}
-            onChangeProdutos={setProdutos} onChangeComponentes={setComponentes} onChangeComerciais={setComerciais}
-          />
+        <Section n="2" icon={<Package size={18} />} title="Produtos do orçamento" subtitle="Escolha o modo de cálculo: por componentes (peças) ou por peso direto.">
+          <div className="flex gap-2 mb-4">
+            <button
+              type="button"
+              onClick={() => setModoCalculo("componentes")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${modoCalculo === "componentes" ? "bg-primary text-primary-foreground" : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-800"}`}
+            >
+              Por Componentes
+            </button>
+            <button
+              type="button"
+              onClick={() => setModoCalculo("peso_direto")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${modoCalculo === "peso_direto" ? "bg-primary text-primary-foreground" : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-800"}`}
+            >
+              Por Peso Direto
+            </button>
+          </div>
+          {modoCalculo === "componentes" ? (
+            <ProdutosSection
+              produtos={produtos} componentes={componentes} comerciais={comerciais}
+              acoOptions={acoOptions} catalogoComercial={catalogoComercial} precoKg={precoAcoKg}
+              onChangeProdutos={setProdutos} onChangeComponentes={setComponentes} onChangeComerciais={setComerciais}
+            />
+          ) : (
+            <PesoDiretoCard pesoDireto={pesoDireto} setPesoDireto={setPesoDireto} precoKg={precoAcoKg} custoAco={totais.custo_total_aco} />
+          )}
         </Section>
 
         <Section n="3" icon={<Coins size={18} />} title="Custo do Aço" subtitle="Informe o preço de mercado do aço (R$/kg). O sistema calcula peso total × preço.">
