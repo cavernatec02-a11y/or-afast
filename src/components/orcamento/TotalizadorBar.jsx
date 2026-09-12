@@ -1,11 +1,11 @@
 import React from "react";
-import { FileDown, Save, Sparkles } from "lucide-react";
+import { FileDown, Save, Sparkles, FileSpreadsheet } from "lucide-react";
 import NumberInput from "@/components/NumberInput";
 import { formatMoeda, formatPeso, statusMargem } from "@/lib/pricingEngine";
 
 export default function TotalizadorBar({
   pesoTotal, custoEmpresa, valorVenda, setValorVenda, totalCliente,
-  resultado, margemMinima, margemAdequada, precoAdequado, onSugerir, onSave, onPDF, saving,
+  resultado, margemMinima, margemAdequada, precoAdequado, onSugerir, onSave, onPDF, onExcel, saving,
 }) {
   const status = statusMargem(resultado.margem, margemMinima, margemAdequada);
   const badge = {
@@ -40,6 +40,9 @@ export default function TotalizadorBar({
         <Stat label="Lucro Líquido" value={formatMoeda(resultado.lucro)} tone={resultado.lucro >= 0 ? "emerald" : "red"} />
 
         <div className="ml-auto flex items-center gap-2">
+          <button onClick={onExcel} disabled={!valorVenda} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-emerald-300 text-emerald-700 text-sm font-semibold hover:bg-emerald-50 disabled:opacity-40 transition dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-900/30">
+            <FileSpreadsheet size={18} /> Excel
+          </button>
           <button onClick={onPDF} disabled={!valorVenda} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-slate-300 text-slate-700 text-sm font-semibold hover:bg-slate-50 disabled:opacity-40 transition dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700/50">
             <FileDown size={18} /> Gerar PDF
           </button>

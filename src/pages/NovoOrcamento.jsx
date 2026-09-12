@@ -11,6 +11,7 @@ import CustosAdicionais from "@/components/orcamento/CustosAdicionais";
 import FormacaoPreco from "@/components/orcamento/FormacaoPreco";
 import TotalizadorBar from "@/components/orcamento/TotalizadorBar";
 import { gerarPDFOrcamento } from "@/lib/pdfOrcamento";
+import { exportarOrcamentoExcel } from "@/lib/exportExcel";
 import PDFPreviewModal from "@/components/PDFPreviewModal";
 import { orcamentosStore, clientesStore, acoStore, catalogoStore } from "@/lib/localStore";
 import {
@@ -193,6 +194,12 @@ export default function NovoOrcamento() {
     setPdfPreview(result);
   };
 
+  const exportarExcel = () => {
+    if (!valorVenda) { toast.error("Defina o valor de venda antes de exportar."); return; }
+    exportarOrcamentoExcel(buildPayload());
+    toast.success("Planilha Excel exportada!");
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center py-24"><div className="w-8 h-8 border-4 border-slate-200 border-t-primary rounded-full animate-spin dark:border-slate-700"></div></div>;
   }
@@ -283,7 +290,7 @@ export default function NovoOrcamento() {
         margemMinima={margemMinima} margemAdequada={margemAdequada}
         precoAdequado={precoAdequado}
         onSugerir={sugerirPreco}
-        onSave={salvar} onPDF={gerarPDF} saving={saving}
+        onSave={salvar} onPDF={gerarPDF} onExcel={exportarExcel} saving={saving}
       />
 
       <PDFPreviewModal
