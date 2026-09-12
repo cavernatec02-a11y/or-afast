@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Toaster } from "@/components/ui/toaster"
 import { Toaster as HotToaster } from "react-hot-toast"
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -8,6 +9,8 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import AccessGate from '@/components/AccessGate';
+import { hasAccess } from '@/lib/sharedStore';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
@@ -33,6 +36,12 @@ const AuthenticatedApp = () => {
 };
 
 
+function ProtectedByCode({ children }) {
+  const [granted, setGranted] = useState(hasAccess());
+  if (!granted) return <AccessGate onSuccess={() => setGranted(true)} />;
+  return children;
+}
+
 function App() {
 
   return (
@@ -40,7 +49,9 @@ function App() {
       <QueryClientProvider client={queryClientInstance}>
         <Router>
           <ScrollToTop />
-          <AuthenticatedApp />
+          <ProtectedByCode>
+            <AuthenticatedApp />
+          </ProtectedByCode>
         </Router>
         <Toaster />
         <HotToaster position="top-right" toastOptions={{ duration: 2500 }} />

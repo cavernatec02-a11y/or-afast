@@ -40,7 +40,7 @@
     },
     "produtos": {
       "type": "array",
-      "description": "Lista de produtos do or\u00e7amento (ex.: porta-palete + estante)",
+      "description": "Lista de produtos do or\u00e7amento",
       "items": {
         "type": "object",
         "properties": {
@@ -54,15 +54,14 @@
             "type": "string"
           },
           "descricao": {
-            "type": "string",
-            "description": "Descri\u00e7\u00e3o t\u00e9cnica do item para a proposta comercial"
+            "type": "string"
           }
         }
       }
     },
     "componentes": {
       "type": "array",
-      "description": "Pe\u00e7as estruturais de todos os produtos (agrupadas por produto_id)",
+      "description": "Pe\u00e7as estruturais de todos os produtos",
       "items": {
         "type": "object",
         "properties": {
@@ -122,6 +121,17 @@
         }
       }
     },
+    "modo_calculo": {
+      "type": "string",
+      "enum": [
+        "componentes",
+        "peso_direto"
+      ],
+      "default": "componentes"
+    },
+    "peso_direto": {
+      "type": "number"
+    },
     "preco_aco_kg": {
       "type": "number",
       "description": "Pre\u00e7o de mercado do a\u00e7o (R$/kg)"
@@ -148,6 +158,9 @@
       "type": "boolean"
     },
     "comissao_percentual": {
+      "type": "number"
+    },
+    "impostos_percent": {
       "type": "number"
     },
     "margem_minima": {
