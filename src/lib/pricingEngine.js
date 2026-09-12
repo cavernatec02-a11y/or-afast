@@ -100,11 +100,15 @@ let _uid = 0;
 export function newUid() { _uid += 1; return `uid_${Date.now().toString(36)}_${_uid.toString(36)}`; }
 
 // Cálculos de peso (geometria). O custo vem do preço global do aço (R$/kg).
+// Fórmula exata da planilha: Peso Unit = Corte × Comprimento × Peso Específico da Chapa (kg/m²)
+// Arredondamento toFixed(5) evita imprecisão de ponto flutuante do JavaScript.
 export function calcPesoUnit(corte, comprimento, pesoEspecifico) {
-  return (Number(corte) || 0) * (Number(comprimento) || 0) * (Number(pesoEspecifico) || 0);
+  const peso = (Number(corte) || 0) * (Number(comprimento) || 0) * (Number(pesoEspecifico) || 0);
+  return Number(peso.toFixed(5));
 }
 export function calcPesoTotal(pesoUnit, quantidade) {
-  return (Number(pesoUnit) || 0) * (Number(quantidade) || 0);
+  const peso = (Number(pesoUnit) || 0) * (Number(quantidade) || 0);
+  return Number(peso.toFixed(5));
 }
 export function recalcComponente(comp) {
   const pesoUnit = calcPesoUnit(comp.corte, comp.comprimento, comp.peso_especifico);
@@ -113,24 +117,24 @@ export function recalcComponente(comp) {
 }
 export function recalcComercial(comp) {
   const total = (Number(comp.quantidade) || 0) * (Number(comp.custo_unitario) || 0);
-  return { ...comp, total };
+  return { ...comp, total: Number(total.toFixed(2)) };
 }
 
 // Totais de um único produto (componentes/comerciais já filtrados para o produto)
 export function calcProdutoTotais(produtoId, componentes, comerciais, precoKg) {
   const comps = (componentes || []).filter((c) => c.produto_id === produtoId);
   const coms = (comerciais || []).filter((c) => c.produto_id === produtoId);
-  const peso = comps.reduce((s, c) => s + (Number(c.peso_total) || 0), 0);
-  const custoAco = peso * (Number(precoKg) || 0);
-  const custoAcessorios = coms.reduce((s, c) => s + (Number(c.total) || 0), 0);
+  const peso = Number(comps.reduce((s, c) => s + (Number(c.peso_total) || 0), 0).toFixed(5));
+  const custoAco = Number((peso * (Number(precoKg) || 0)).toFixed(2));
+  const custoAcessorios = Number(coms.reduce((s, c) => s + (Number(c.total) || 0), 0).toFixed(2));
   return { peso, custoAco, custoAcessorios };
 }
 
 // Totais do orçamento inteiro (arrays flat de componentes e comerciais)
 export function calcTotaisOrcamento(componentes, comerciais, precoKg) {
-  const peso_total_aco = (componentes || []).reduce((s, c) => s + (Number(c.peso_total) || 0), 0);
-  const custo_acessorios = (comerciais || []).reduce((s, c) => s + (Number(c.total) || 0), 0);
-  const custo_total_aco = peso_total_aco * (Number(precoKg) || 0);
+  const peso_total_aco = Number((componentes || []).reduce((s, c) => s + (Number(c.peso_total) || 0), 0).toFixed(5));
+  const custo_acessorios = Number((comerciais || []).reduce((s, c) => s + (Number(c.total) || 0), 0).toFixed(2));
+  const custo_total_aco = Number((peso_total_aco * (Number(precoKg) || 0)).toFixed(2));
   return { peso_total_aco, custo_total_aco, custo_acessorios };
 }
 
