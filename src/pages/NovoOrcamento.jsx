@@ -102,6 +102,12 @@ export default function NovoOrcamento() {
   const onSelectCliente = (c) =>
     setForm((f) => ({ ...f, cliente_id: c.id, cliente_nome: c.nome, contato: c.contato || "", telefone: c.telefone || "", email: c.email || "" }));
 
+  // Peso calculado a partir das peças (sempre disponível, independente do modo)
+  const pesoComponentes = useMemo(
+    () => Number((componentes || []).reduce((s, c) => s + (Number(c.peso_total) || 0), 0).toFixed(5)),
+    [componentes]
+  );
+
   const totais = useMemo(() => {
     if (modoCalculo === "peso_direto") {
       const peso = Number(Number(pesoDireto || 0).toFixed(5));
@@ -220,7 +226,7 @@ export default function NovoOrcamento() {
             </button>
             <button
               type="button"
-              onClick={() => setModoCalculo("peso_direto")}
+              onClick={() => { setPesoDireto(pesoComponentes); setModoCalculo("peso_direto"); }}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition ${modoCalculo === "peso_direto" ? "bg-primary text-primary-foreground" : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-800"}`}
             >
               Por Peso Direto
@@ -233,7 +239,7 @@ export default function NovoOrcamento() {
               onChangeProdutos={setProdutos} onChangeComponentes={setComponentes} onChangeComerciais={setComerciais}
             />
           ) : (
-            <PesoDiretoCard pesoDireto={pesoDireto} setPesoDireto={setPesoDireto} precoKg={precoAcoKg} custoAco={totais.custo_total_aco} />
+            <PesoDiretoCard pesoDireto={pesoDireto} setPesoDireto={setPesoDireto} precoKg={precoAcoKg} setPrecoKg={setPrecoAcoKg} custoAco={totais.custo_total_aco} />
           )}
         </Section>
 
