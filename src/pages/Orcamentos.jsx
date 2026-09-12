@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Plus, FileText, Pencil, Trash2, Search, ChevronDown } from "lucide-react";
 import { toast } from "react-hot-toast";
 import Navbar from "@/components/Navbar";
+import CalculadoraKg from "@/components/CalculadoraKg";
 import { formatMoeda, formatPeso } from "@/lib/pricingEngine";
 import { orcamentosStore } from "@/lib/localStore";
 
@@ -44,6 +45,12 @@ export default function Orcamentos() {
           <div className="relative ml-auto max-w-sm w-full">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por cliente, projeto ou título..." className="input pl-9" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
+          <div className="lg:col-span-1">
+            <CalculadoraKg />
           </div>
         </div>
 
