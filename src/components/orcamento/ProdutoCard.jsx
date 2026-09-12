@@ -14,12 +14,12 @@ export default function ProdutoCard({ produto, componentes, comerciais, acoOptio
   const setTipo = (tipo) => {
     // Sempre preenche a descrição técnica pré-definida do tipo selecionado
     const descricao = DESCRICOES_PRODUTO[tipo] || produto.descricao || "";
+    // Se já existem peças, confirma antes de substituir (descrição deve bater com as quantidades)
+    if (componentes.length > 0 && !confirm("Trocar o tipo de produto substituirá as peças atuais pelas peças padrão do novo tipo. Continuar?")) return;
     onChangeMeta({ ...produto, tipo_produto: tipo, descricao });
-    if (componentes.length === 0) {
-      const aco = defaultAco();
-      const preset = (PRODUTO_PRESETS[tipo] || []).map((p) => recalcComponente({ uid: newUid(), produto_id: produto.uid, ...p, custo_aco_id: aco?.id || "", peso_especifico: aco?.peso_especifico || 0 }));
-      onChangeComponentes(preset);
-    }
+    const aco = defaultAco();
+    const preset = (PRODUTO_PRESETS[tipo] || []).map((p) => recalcComponente({ uid: newUid(), produto_id: produto.uid, ...p, custo_aco_id: aco?.id || "", peso_especifico: aco?.peso_especifico || 0 }));
+    onChangeComponentes(preset);
   };
 
   const recarregarPreset = () => {

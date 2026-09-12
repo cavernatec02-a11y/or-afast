@@ -277,10 +277,9 @@ export async function gerarPDFOrcamento(orc) {
   doc.setFontSize(8);
   doc.setTextColor(...GRAY);
   doc.text(`• Proposta válida por ${orc.validade_dias || 15} dias a partir da data de emissão.`, M + 4, y + 6);
-  doc.text(`• Peso total da estrutura: ${formatPeso(orc.peso_total_aco)} kg.`, M + 4, y + 11);
-  doc.text("• Valores sujeitos a confirmação após detalhamento técnico final.", M + 4, y + 16);
-  doc.text("• Prazo de entrega e condições de pagamento a combinar.", M + 4, y + 21);
-  y += 28;
+  doc.text("• Valores sujeitos a confirmação após detalhamento técnico final.", M + 4, y + 11);
+  doc.text("• Prazo de entrega e condições de pagamento a combinar.", M + 4, y + 16);
+  y += 24;
 
   // ── RODAPÉ ───────────────────────────────────────────────────────────────────
   const pageCount = doc.getNumberOfPages();
@@ -298,7 +297,9 @@ export async function gerarPDFOrcamento(orc) {
     doc.text(`Página ${p}/${pageCount}  ·  ${fmtData(new Date().toISOString())}`, M + W, 293.5, { align: "right" });
   }
 
-  doc.save(`Proposta-Ripresa-${(orc.titulo || "proposta").replace(/[^a-zA-Z0-9]/g, "_")}.pdf`);
+  const blob = doc.output("blob");
+  const url = URL.createObjectURL(blob);
+  return { url, fileName: `Proposta-Ripresa-${(orc.titulo || "proposta").replace(/[^a-zA-Z0-9]/g, "_")}.pdf` };
 }
 
 function fmtData(d) {

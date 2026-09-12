@@ -10,6 +10,7 @@ import CustosAdicionais from "@/components/orcamento/CustosAdicionais";
 import FormacaoPreco from "@/components/orcamento/FormacaoPreco";
 import TotalizadorBar from "@/components/orcamento/TotalizadorBar";
 import { gerarPDFOrcamento } from "@/lib/pdfOrcamento";
+import PDFPreviewModal from "@/components/PDFPreviewModal";
 import { orcamentosStore, clientesStore, acoStore, catalogoStore } from "@/lib/localStore";
 import {
   calcTotaisOrcamento, calcCustoEmpresa, calcTotalCliente,
@@ -44,6 +45,7 @@ export default function NovoOrcamento() {
   const [margemMinima, setMargemMinima] = useState(15);
   const [margemAdequada, setMargemAdequada] = useState(30);
   const [valorVenda, setValorVenda] = useState(0);
+  const [pdfPreview, setPdfPreview] = useState(null);
 
   useEffect(() => {
     setAcoOptions(acoStore.list());
@@ -165,7 +167,8 @@ export default function NovoOrcamento() {
 
   const gerarPDF = async () => {
     if (!valorVenda) { toast.error("Defina o valor de venda antes de gerar o PDF."); return; }
-    await gerarPDFOrcamento(buildPayload());
+    const result = await gerarPDFOrcamento(buildPayload());
+    setPdfPreview(result);
   };
 
   if (loading) {
@@ -239,6 +242,12 @@ export default function NovoOrcamento() {
         precoAdequado={precoAdequado}
         onSugerir={sugerirPreco}
         onSave={salvar} onPDF={gerarPDF} saving={saving}
+      />
+
+      <PDFPreviewModal
+        pdfUrl={pdfPreview?.url}
+        fileName={pdfPreview?.fileName}
+        onClose={() => setPdfPreview(null)}
       />
     </div>
   );
