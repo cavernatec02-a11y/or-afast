@@ -38,10 +38,8 @@ export default function FormacaoPreco({
 
         <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
           <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2 dark:text-slate-100"><Info size={16} className="text-slate-500" /> Tributos e Resultado</h3>
-          <Line label={`Impostos (${Number(impostosPct || 0).toFixed(2)}%)`} value="Editável pelo usuário" />
+          <Line label={`Impostos (${Number(impostosPct || 0).toFixed(2)}%)`} value={formatMoeda(impostosValor)} />
           <Line label={`Comissão (${comissaoPct}%)`} value={formatMoeda(comissaoValor)} />
-          <div className="border-t border-slate-200 my-2" />
-          <Line label="Impostos sobre a Venda" value={formatMoeda(impostosValor)} />
           <div className="border-t border-slate-200 my-2" />
           <Line label="Lucro Líquido" value={formatMoeda(resultado.lucro)} strong tone={resultado.lucro >= 0 ? "emerald" : "red"} />
         </div>
