@@ -13,7 +13,7 @@ import TotalizadorBar from "@/components/orcamento/TotalizadorBar";
 import { gerarPDFOrcamento } from "@/lib/pdfOrcamento";
 import { exportarOrcamentoExcel } from "@/lib/exportExcel";
 import PDFPreviewModal from "@/components/PDFPreviewModal";
-import { orcamentosStore, clientesStore, acoStore, catalogoStore } from "@/lib/localStore";
+import { orcamentosStore, clientesStore, acoStore, catalogoStore } from "@/lib/sharedStore";
 import {
   calcTotaisOrcamento, calcCustoEmpresa, calcTotalCliente,
   calcPrecoVendaParaMargem, calcResultadoVenda, newUid,
@@ -52,21 +52,28 @@ export default function NovoOrcamento() {
   const [pdfPreview, setPdfPreview] = useState(null);
 
   useEffect(() => {
-    setAcoOptions(acoStore.list());
-    setCatalogoComercial(catalogoStore.list());
-    setClientes(clientesStore.list());
+    (async () => {
+      try {
+        const [aco, catalogo, cli] = await Promise.all([
+          acoStore.list(),
+          catalogoStore.list(),
+          clientesStore.list(),
+        ]);
+        setAcoOptions(aco || []);
+        setCatalogoComercial(catalogo || []);
+        setClientes(cli || []);
 
-    if (!id) {
-      setProdutos([novoProduto()]);
-      setLoading(false);
-      return;
-    }
-    const orc = orcamentosStore.get(id);
-    if (!orc) {
-      toast.error("Orçamento não encontrado.");
-      navigate("/");
-      return;
-    }
+        if (!id) {
+          setProdutos([novoProduto()]);
+          setLoading(false);
+          return;
+        }
+        const orc = await orcamentosStore.get(id);
+        if (!orc) {
+          toast.error("Orçamento não encontrado.");
+          navigate("/");
+          return;
+        }
     setForm({
       titulo: orc.titulo || "", cliente_id: orc.cliente_id || "", cliente_nome: orc.cliente_nome || "",
       contato: orc.contato || "", telefone: orc.telefone || "", email: orc.email || "",
@@ -91,6 +98,11 @@ export default function NovoOrcamento() {
     setMargemAdequada(orc.margem_adequada ?? 30);
     setValorVenda(orc.valor_venda ?? 0);
     setLoading(false);
+      } catch (e) {
+        toast.error("Erro ao carregar dados. Verifique sua conexão.");
+        setLoading(false);
+      }
+    })();
   }, [id]);
 
   const gerarTitulo = () => {
@@ -166,7 +178,7 @@ export default function NovoOrcamento() {
     lucro_real: resultado.lucro,
   });
 
-  const salvar = () => {
+  const salvar = async () => {
     const tituloFinal = form.titulo || gerarTitulo();
     if (!tituloFinal) { toast.error("Selecione um cliente ou informe um título."); return; }
     setForm((f) => ({ ...f, titulo: tituloFinal }));
@@ -174,10 +186,10 @@ export default function NovoOrcamento() {
     try {
       const payload = { ...buildPayload(), titulo: tituloFinal };
       if (id) {
-        orcamentosStore.update(id, payload);
+        await orcamentosStore.update(id, payload);
         toast.success("Orçamento atualizado!");
       } else {
-        orcamentosStore.create(payload);
+        await orcamentosStore.create(payload);
         toast.success("Orçamento salvo!");
       }
       navigate("/");

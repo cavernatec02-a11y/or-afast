@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Plus, Trash2, Pencil, Search, Users } from "lucide-react";
 import { toast } from "react-hot-toast";
 import Navbar from "@/components/Navbar";
-import { clientesStore } from "@/lib/localStore";
+import { clientesStore } from "@/lib/sharedStore";
 
 const VAZIO = { nome: "", contato: "", telefone: "", fax: "", email: "", web_site: "", numero_projeto: "", numero_folha: "" };
 
@@ -11,27 +11,46 @@ export default function Clientes() {
   const [busca, setBusca] = useState("");
   const [editando, setEditando] = useState(null);
 
-  const carregar = () => setLista(clientesStore.list());
-  useEffect(() => { carregar(); }, []);
-
-  const salvar = (item) => {
-    if (!item.nome) return toast.error("Informe o nome do cliente.");
-    if (item.id) {
-      clientesStore.update(item.id, item);
-      toast.success("Cliente atualizado!");
-    } else {
-      clientesStore.create(item);
-      toast.success("Cliente cadastrado!");
+  const carregar = async () => {
+    try {
+      const data = await clientesStore.list();
+      setLista(data || []);
+    } catch (e) {
+      toast.error("Erro ao carregar clientes.");
     }
-    setEditando(null);
+  };
+  useEffect(() => {
     carregar();
+    const interval = setInterval(carregar, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const salvar = async (item) => {
+    if (!item.nome) return toast.error("Informe o nome do cliente.");
+    try {
+      if (item.id) {
+        await clientesStore.update(item.id, item);
+        toast.success("Cliente atualizado!");
+      } else {
+        await clientesStore.create(item);
+        toast.success("Cliente cadastrado!");
+      }
+      setEditando(null);
+      carregar();
+    } catch (e) {
+      toast.error("Erro ao salvar cliente.");
+    }
   };
 
-  const remover = (id) => {
+  const remover = async (id) => {
     if (!confirm("Excluir este cliente?")) return;
-    clientesStore.delete(id);
-    carregar();
-    toast.success("Excluído.");
+    try {
+      await clientesStore.delete(id);
+      carregar();
+      toast.success("Excluído.");
+    } catch (e) {
+      toast.error("Erro ao excluir cliente.");
+    }
   };
 
   const filtrados = lista.filter((c) =>
@@ -45,7 +64,7 @@ export default function Clientes() {
         <div className="flex flex-wrap items-end gap-4 mb-5">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Clientes</h1>
-            <p className="text-sm text-slate-500">Cadastro local de clientes — salvo no aparelho</p>
+            <p className="text-sm text-slate-500">Cadastro de clientes — compartilhado com a equipe</p>
           </div>
           <button onClick={() => setEditando({ ...VAZIO })} className="ml-auto inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90">
             <Plus size={18} /> Novo cliente

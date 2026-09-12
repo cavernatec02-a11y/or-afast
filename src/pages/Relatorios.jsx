@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { BarChart3, TrendingUp, CheckCircle2, FileText, Calendar } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from "recharts";
 import Navbar from "@/components/Navbar";
-import { orcamentosStore } from "@/lib/localStore";
+import { orcamentosStore } from "@/lib/sharedStore";
 import { formatMoeda } from "@/lib/pricingEngine";
 
 const STATUS_LABELS = { rascunho: "Rascunho", enviado: "Enviado", aprovado: "Aprovado", recusado: "Recusado" };
@@ -10,7 +10,19 @@ const STATUS_LABELS = { rascunho: "Rascunho", enviado: "Enviado", aprovado: "Apr
 export default function Relatorios() {
   const [orcamentos, setOrcamentos] = useState([]);
 
-  useEffect(() => { setOrcamentos(orcamentosStore.list()); }, []);
+  useEffect(() => {
+    const carregar = async () => {
+      try {
+        const data = await orcamentosStore.list();
+        setOrcamentos(data || []);
+      } catch (e) {
+        // silent
+      }
+    };
+    carregar();
+    const interval = setInterval(carregar, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Agrupar por mês (YYYY-MM) — apenas aprovados
   const dadosMensais = useMemo(() => {

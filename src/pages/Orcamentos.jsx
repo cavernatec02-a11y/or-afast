@@ -5,27 +5,49 @@ import { toast } from "react-hot-toast";
 import Navbar from "@/components/Navbar";
 import CalculadoraKg from "@/components/CalculadoraKg";
 import { formatMoeda, formatPeso } from "@/lib/pricingEngine";
-import { orcamentosStore } from "@/lib/localStore";
+import { orcamentosStore } from "@/lib/sharedStore";
 
 export default function Orcamentos() {
   const [orcamentos, setOrcamentos] = useState([]);
   const [busca, setBusca] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const carregar = () => setOrcamentos(orcamentosStore.list());
-
-  useEffect(() => { carregar(); }, []);
-
-  const remover = (id) => {
-    if (!confirm("Excluir este orçamento?")) return;
-    orcamentosStore.delete(id);
-    setOrcamentos((o) => o.filter((x) => x.id !== id));
-    toast.success("Orçamento excluído.");
+  const carregar = async () => {
+    try {
+      const data = await orcamentosStore.list();
+      setOrcamentos(data || []);
+    } catch (e) {
+      toast.error("Erro ao carregar orçamentos.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const mudarStatus = (id, status) => {
-    orcamentosStore.update(id, { status });
-    setOrcamentos((o) => o.map((x) => (x.id === id ? { ...x, status } : x)));
-    toast.success(`Status alterado para "${status}".`);
+  useEffect(() => {
+    carregar();
+    const interval = setInterval(carregar, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const remover = async (id) => {
+    if (!confirm("Excluir este orçamento?")) return;
+    try {
+      await orcamentosStore.delete(id);
+      setOrcamentos((o) => o.filter((x) => x.id !== id));
+      toast.success("Orçamento excluído.");
+    } catch (e) {
+      toast.error("Erro ao excluir.");
+    }
+  };
+
+  const mudarStatus = async (id, status) => {
+    try {
+      await orcamentosStore.update(id, { status });
+      setOrcamentos((o) => o.map((x) => (x.id === id ? { ...x, status } : x)));
+      toast.success(`Status alterado para "${status}".`);
+    } catch (e) {
+      toast.error("Erro ao alterar status.");
+    }
   };
 
   const filtrados = orcamentos.filter((o) =>
@@ -40,7 +62,7 @@ export default function Orcamentos() {
         <div className="flex flex-wrap items-end gap-4 mb-5">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Orçamentos</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Todos os orçamentos salvos no aparelho — clique para editar</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Orçamentos da equipe — atualizados em tempo real</p>
           </div>
           <div className="relative ml-auto max-w-sm w-full">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -54,7 +76,9 @@ export default function Orcamentos() {
           </div>
         </div>
 
-        {filtrados.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-24"><div className="w-8 h-8 border-4 border-slate-200 border-t-primary rounded-full animate-spin dark:border-slate-700"></div></div>
+        ) : filtrados.length === 0 ? (
           <EmptyState />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

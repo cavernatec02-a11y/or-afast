@@ -3,34 +3,53 @@ import { Plus, Trash2, Pencil } from "lucide-react";
 import { toast } from "react-hot-toast";
 import Navbar from "@/components/Navbar";
 import { formatMoeda } from "@/lib/pricingEngine";
-import { acoStore } from "@/lib/localStore";
+import { acoStore } from "@/lib/sharedStore";
 
 export default function TabelaAco() {
   const [lista, setLista] = useState([]);
   const [editando, setEditando] = useState(null);
   const VAZIO = { codigo: "", aco_bitola: "", tipo_aco: "SAE 1008/1010", espessura_mm: 0, peso_especifico: 0, preco_kg: 0 };
 
-  const carregar = () => setLista(acoStore.list());
-  useEffect(() => { carregar(); }, []);
-
-  const salvar = (item) => {
-    if (!item.codigo) return toast.error("Informe o código.");
-    if (item.id) {
-      acoStore.update(item.id, item);
-      toast.success("Atualizado!");
-    } else {
-      acoStore.create(item);
-      toast.success("Adicionado!");
+  const carregar = async () => {
+    try {
+      const data = await acoStore.list();
+      setLista(data || []);
+    } catch (e) {
+      toast.error("Erro ao carregar tabela.");
     }
-    setEditando(null);
+  };
+  useEffect(() => {
     carregar();
+    const interval = setInterval(carregar, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const salvar = async (item) => {
+    if (!item.codigo) return toast.error("Informe o código.");
+    try {
+      if (item.id) {
+        await acoStore.update(item.id, item);
+        toast.success("Atualizado!");
+      } else {
+        await acoStore.create(item);
+        toast.success("Adicionado!");
+      }
+      setEditando(null);
+      carregar();
+    } catch (e) {
+      toast.error("Erro ao salvar item.");
+    }
   };
 
-  const remover = (id) => {
+  const remover = async (id) => {
     if (!confirm("Excluir este item?")) return;
-    acoStore.delete(id);
-    carregar();
-    toast.success("Excluído.");
+    try {
+      await acoStore.delete(id);
+      carregar();
+      toast.success("Excluído.");
+    } catch (e) {
+      toast.error("Erro ao excluir item.");
+    }
   };
 
   return (
@@ -40,7 +59,7 @@ export default function TabelaAco() {
         <div className="flex flex-wrap items-end gap-4 mb-5">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Tabela de Custo de Aço</h1>
-            <p className="text-sm text-slate-500">Bitolas, tipos, peso específico e preço por kg — salvo localmente</p>
+            <p className="text-sm text-slate-500">Bitolas, tipos, peso específico e preço por kg — compartilhado com a equipe</p>
           </div>
           <button onClick={() => setEditando(VAZIO)} className="ml-auto inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90">
             <Plus size={18} /> Novo item

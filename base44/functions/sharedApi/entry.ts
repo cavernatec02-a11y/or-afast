@@ -51,6 +51,10 @@ export default async function(req: Request): Promise<Response> {
         } else {
           items = await store.list("-created_date", 500);
         }
+        // Auto-seed aco table if empty
+        if (entity === "aco" && items.length === 0) {
+          items = await store.bulkCreate(ACO_SEED);
+        }
         return Response.json({ success: true, data: items });
       }
       case "get": {

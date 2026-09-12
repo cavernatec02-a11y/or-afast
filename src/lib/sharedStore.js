@@ -22,9 +22,11 @@ async function callApi(payload) {
   const res = await base44.functions.invoke("sharedApi", { ...payload, code });
   if (!res.data) throw new Error("Sem resposta do servidor");
   if (res.data.success === false) {
-    const err = new Error(res.data.error || "Erro desconhecido");
-    err.code = res.data.error?.includes("Código") ? "ACCESS_DENIED" : "API_ERROR";
-    throw err;
+    if (res.data.error?.includes("Código")) {
+      clearAccessCode();
+      window.location.reload();
+    }
+    throw new Error(res.data.error || "Erro desconhecido");
   }
   return res.data.data;
 }
