@@ -77,8 +77,17 @@ export default function ProdutosSection({ produtos, componentes, comerciais, aco
         </div>
       )}
 
+      <div className="flex flex-wrap gap-2">
+        <button onClick={add} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 border-dashed border-slate-300 text-slate-700 text-sm font-semibold hover:border-primary hover:bg-slate-50 transition flex-1 justify-center dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800">
+          <Plus size={18} /> Adicionar produto
+        </button>
+        <button onClick={abrirTemplates} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 border-dashed border-primary/40 text-primary text-sm font-semibold hover:bg-primary/5 transition dark:text-primary">
+          <Bookmark size={18} /> Carregar template
+        </button>
+      </div>
+
       {showTemplates && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+        <div className="rounded-2xl border border-primary/30 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
               <Bookmark size={16} /> Templates salvos
@@ -86,7 +95,7 @@ export default function ProdutosSection({ produtos, componentes, comerciais, aco
             <button onClick={() => setShowTemplates(false)} className="p-1 rounded-md text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"><X size={16} /></button>
           </div>
           {templates.length === 0 ? (
-            <p className="text-sm text-slate-500 py-4 text-center">Nenhum template salvo. Use o ícone de marcador em um produto para salvar sua configuração.</p>
+            <p className="text-sm text-slate-500 py-4 text-center">Nenhum template salvo. Use o ícone de marcador (🔖) em um produto para salvar sua configuração.</p>
           ) : (
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {templates.map((tpl) => (
@@ -106,15 +115,6 @@ export default function ProdutosSection({ produtos, componentes, comerciais, aco
           )}
         </div>
       )}
-
-      <div className="flex flex-wrap gap-2">
-        <button onClick={add} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 border-dashed border-slate-300 text-slate-700 text-sm font-semibold hover:border-primary hover:bg-slate-50 transition flex-1 justify-center dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800">
-          <Plus size={18} /> Adicionar produto
-        </button>
-        <button onClick={abrirTemplates} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 border-dashed border-primary/40 text-primary text-sm font-semibold hover:bg-primary/5 transition dark:text-primary">
-          <Bookmark size={18} /> Carregar template
-        </button>
-      </div>
     </div>
   );
 }
