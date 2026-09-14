@@ -63,10 +63,20 @@ function drawTableHeader(doc, y, cols) {
   doc.setTextColor(255, 255, 255);
   let x = M;
   cols.forEach(({ label, w, align }) => {
-    doc.text(label, align === "right" ? x + w - 2 : x + 2, y + 5.5, { align: align === "right" ? "right" : "left" });
+    const display = fitText(doc, label, w - 4);
+    doc.text(display, align === "right" ? x + w - 2 : x + 2, y + 5.5, { align: align === "right" ? "right" : "left" });
     x += w;
   });
   return y + 8;
+}
+
+function fitText(doc, txt, maxWidth) {
+  if (doc.getTextWidth(txt) <= maxWidth) return txt;
+  let t = txt;
+  while (doc.getTextWidth(t + "...") > maxWidth && t.length > 3) {
+    t = t.slice(0, -1);
+  }
+  return t + "...";
 }
 
 function drawTableRow(doc, y, cols, cells, zebra) {
@@ -78,7 +88,8 @@ function drawTableRow(doc, y, cols, cells, zebra) {
   let x = M;
   cols.forEach(({ w, align }, i) => {
     const txt = String(cells[i] ?? "");
-    doc.text(txt, align === "right" ? x + w - 2 : x + 2, y + 5, { align: align === "right" ? "right" : "left" });
+    const display = fitText(doc, txt, w - 4);
+    doc.text(display, align === "right" ? x + w - 2 : x + 2, y + 5, { align: align === "right" ? "right" : "left" });
     x += w;
   });
   doc.setDrawColor(...BORDER);
@@ -169,8 +180,8 @@ export async function gerarPDFOrcamento(orc) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8.5);
       doc.setTextColor(...DARK);
-      const descLines = doc.splitTextToSize(prod.descricao, W - 4);
-      doc.text(descLines, M + 2, y + 4);
+      const descLines = doc.splitTextToSize(prod.descricao, W - 8);
+      doc.text(descLines, M + 3, y + 4);
       y += descLines.length * 4 + 4;
     }
 
@@ -208,7 +219,9 @@ export async function gerarPDFOrcamento(orc) {
   });
 
   // ── RESUMO FINANCEIRO ────────────────────────────────────────────────────────
-  y = checkY(doc, y, 60);
+  // Força nova página se não houver espaço suficiente para o resumo completo
+  if (y > 210) { doc.addPage(); y = 20; }
+  y = checkY(doc, y, 70);
   y = sectionTitle(doc, y, "RESUMO FINANCEIRO");
 
   // Tabela de itens do resumo — valor das estruturas separado de frete e montagem
