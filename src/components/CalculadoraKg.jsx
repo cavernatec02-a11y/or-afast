@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Calculator } from "lucide-react";
+import { Calculator, RotateCcw } from "lucide-react";
 import NumberInput from "@/components/NumberInput";
 import { formatMoeda, formatPeso } from "@/lib/pricingEngine";
 
@@ -15,10 +15,17 @@ export default function CalculadoraKg() {
         <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
           <Calculator size={16} />
         </div>
-        <div>
+        <div className="flex-1">
           <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Calculadora por Kg</h3>
           <p className="text-xs text-slate-500 dark:text-slate-400">Peso × Preço por kg = Total</p>
         </div>
+        <button
+          onClick={() => { setPeso(0); setPrecoKg(0); }}
+          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800"
+          title="Limpar campos"
+        >
+          <RotateCcw size={14} /> Limpar
+        </button>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
