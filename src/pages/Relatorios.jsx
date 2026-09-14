@@ -87,12 +87,17 @@ export default function Relatorios() {
             <p className="text-sm text-slate-500 py-12 text-center">Nenhum orçamento aprovado ainda. Marque orçamentos como "aprovado" para acompanhar os resultados.</p>
           ) : (
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="mes" tick={{ fontSize: 12, fill: "#64748b" }} />
-                <YAxis tick={{ fontSize: 12, fill: "#64748b" }} tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`} />
-                <Tooltip formatter={(v) => formatMoeda(v)} contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13 }} />
-                <Bar dataKey="valor" radius={[6, 6, 0, 0]} fill="#FF8200" />
+              <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis dataKey="mes" tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={{ stroke: "hsl(var(--border))" }} />
+                <YAxis tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={{ stroke: "hsl(var(--border))" }} width={60} />
+                <Tooltip
+                  formatter={(v) => [formatMoeda(v), "Valor"]}
+                  contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))", backgroundColor: "hsl(var(--popover))", color: "hsl(var(--popover-foreground))", fontSize: 13 }}
+                  labelStyle={{ color: "hsl(var(--popover-foreground))", fontWeight: 600 }}
+                  cursor={{ fill: "hsl(var(--muted))" }}
+                />
+                <Bar dataKey="valor" radius={[6, 6, 0, 0]} fill="hsl(var(--primary))" maxBarSize={60} />
               </BarChart>
             </ResponsiveContainer>
           )}
