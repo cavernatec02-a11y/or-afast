@@ -204,44 +204,16 @@ export async function gerarPDFOrcamento(orc) {
       y += 4;
     }
 
-    // Subtotal do produto — Qtde / Valor Unit. / Valor Total (padrão do resumo)
-    const valorAco = comps.reduce((s, c) => s + (Number(c.peso_total) || 0), 0) * (Number(orc.preco_aco_kg) || 0);
-    const valorAcessorios = coms.reduce((s, c) => s + (Number(c.total) || 0), 0);
-    const valorProduto = valorAco + valorAcessorios;
-    if (comps.length > 0 || coms.length > 0) {
-      const colsSub = [
-        { label: "Qtde", w: 40, align: "right" },
-        { label: "Valor Unit.", w: 70, align: "right" },
-        { label: "Valor Total", w: 70, align: "right" },
-      ];
-      y = drawTableHeader(doc, y, colsSub);
-      y = checkY(doc, y, 7);
-      doc.setFillColor(...LIGHT);
-      doc.rect(M, y, W, 7, "F");
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8.5);
-      doc.setTextColor(...DARK);
-      let sx = M;
-      doc.text("1 un", sx + colsSub[0].w - 2, y + 5, { align: "right" });
-      sx += colsSub[0].w;
-      doc.text(formatMoeda(valorProduto), sx + colsSub[1].w - 2, y + 5, { align: "right" });
-      sx += colsSub[1].w;
-      doc.setFont("helvetica", "bold");
-      doc.text(formatMoeda(valorProduto), sx + colsSub[2].w - 2, y + 5, { align: "right" });
-      doc.setDrawColor(...BORDER);
-      doc.setLineWidth(0.1);
-      doc.line(M, y + 7, M + W, y + 7);
-      y += 11;
-    }
+    y += 4;
   });
 
   // ── RESUMO FINANCEIRO ────────────────────────────────────────────────────────
   y = checkY(doc, y, 60);
   y = sectionTitle(doc, y, "RESUMO FINANCEIRO");
 
-  // Tabela de itens do resumo (sem Custo do Aço — informação interna)
+  // Tabela de itens do resumo — valor das estruturas separado de frete e montagem
   const itensResumo = [];
-  itensResumo.push(["Estrutura Metálica", formatMoeda(orc.valor_venda)]);
+  itensResumo.push(["Valor das Estruturas Metálicas", formatMoeda(orc.valor_venda)]);
   if (orc.cobrar_montagem && orc.montagem > 0) itensResumo.push(["Montagem", formatMoeda(orc.montagem)]);
   if (orc.cobrar_frete && orc.frete > 0) itensResumo.push(["Frete", formatMoeda(orc.frete)]);
 
@@ -249,13 +221,11 @@ export async function gerarPDFOrcamento(orc) {
     { label: "Descrição", w: 140, align: "left" },
     { label: "Valor", w: 40, align: "right" },
   ];
-  if (itensResumo.length > 0) {
-    y = drawTableHeader(doc, y, colsRes);
-    itensResumo.forEach(([desc, val], i) => {
-      y = drawTableRow(doc, y, colsRes, [desc, val], i % 2 === 0);
-    });
-    y += 2;
-  }
+  y = drawTableHeader(doc, y, colsRes);
+  itensResumo.forEach(([desc, val], i) => {
+    y = drawTableRow(doc, y, colsRes, [desc, val], i % 2 === 0);
+  });
+  y += 2;
 
   // Caixa VALOR TOTAL
   y = checkY(doc, y, 18);
