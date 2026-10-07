@@ -79,6 +79,35 @@ function fitText(doc, txt, maxWidth) {
   return t + "...";
 }
 
+// Normaliza texto colado de outras fontes para quebrar corretamente no PDF:
+// - converte espaços não-quebráveis (NBSP e variantes) em espaços comuns
+// - quebra palavras longas demais (sem espaço) em pedaços que cabem na largura
+function wrapTextForPdf(doc, text, maxWidth) {
+  let t = String(text || "")
+    .replace(/\r\n?/g, "\n")
+    .replace(/[\u00A0\u2007\u202F\uFEFF]/g, " ")   // espaços não-quebráveis -> espaço
+    .replace(/\t/g, " ")
+    .replace(/ +/g, " ");
+  const tokens = t.split(/(\s+)/);
+  const out = [];
+  for (const w of tokens) {
+    if (w === "" || /^\s+$/.test(w)) { out.push(w); continue; }
+    if (doc.getTextWidth(w) <= maxWidth) { out.push(w); continue; }
+    // palavra longa demais: quebra caractere a caractere
+    let chunk = "";
+    for (const ch of w) {
+      if (doc.getTextWidth(chunk + ch) > maxWidth && chunk) {
+        out.push(chunk + "\n");
+        chunk = ch;
+      } else {
+        chunk += ch;
+      }
+    }
+    out.push(chunk);
+  }
+  return out.join("");
+}
+
 function drawTableRow(doc, y, cols, cells, zebra) {
   y = checkY(doc, y, 7);
   if (zebra) { doc.setFillColor(248, 250, 252); doc.rect(M, y, W, 7, "F"); }
@@ -180,7 +209,8 @@ export async function gerarPDFOrcamento(orc) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8.5);
       doc.setTextColor(...DARK);
-      const descLines = doc.splitTextToSize(prod.descricao, W - 8);
+      const descWrapped = wrapTextForPdf(doc, prod.descricao, W - 8);
+      const descLines = doc.splitTextToSize(descWrapped, W - 8);
       doc.text(descLines, M + 3, y + 4);
       y += descLines.length * 4 + 4;
     }
