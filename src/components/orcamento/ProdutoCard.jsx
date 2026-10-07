@@ -4,13 +4,16 @@ import { toast } from "react-hot-toast";
 import ComponenteGrid from "@/components/orcamento/ComponenteGrid";
 import ComponenteComercialGrid from "@/components/orcamento/ComponenteComercialGrid";
 import PecasPreviewModal from "@/components/orcamento/PecasPreviewModal";
+import ComerciaisPreviewModal from "@/components/orcamento/ComerciaisPreviewModal";
 import { exportarPecasExcel } from "@/lib/exportPecas";
+import { exportarComerciaisExcel } from "@/lib/exportComerciais";
 import { TIPOS_PRODUTO, PRODUTO_PRESETS, DESCRICOES_PRODUTO, recalcComponente, calcProdutoTotais, newUid, formatMoeda, formatPeso } from "@/lib/pricingEngine";
 
 // Um produto dentro do orçamento. As peças vivem em arrays flat no parent, filtradas por produto_id.
 export default function ProdutoCard({ produto, componentes, comerciais, acoOptions, catalogoComercial, precoKg, onChangeMeta, onChangeComponentes, onChangeComerciais, onRemove, onSaveTemplate }) {
   const [aberto, setAberto] = useState(true);
   const [showPecas, setShowPecas] = useState(false);
+  const [showComerciais, setShowComerciais] = useState(false);
   const totais = calcProdutoTotais(produto.uid, componentes, comerciais, precoKg);
 
   const defaultAco = () => acoOptions.find((a) => a.codigo === "# 14 (2,00)") || acoOptions[0];
@@ -115,7 +118,19 @@ export default function ProdutoCard({ produto, componentes, comerciais, acoOptio
             <ComponenteGrid componentes={componentes} acoOptions={acoOptions} precoKg={precoKg} onChange={handleComponentes} />
           </div>
           <div>
-            <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1.5 dark:text-slate-400"><Boxes size={14} /> Componentes comerciais</h4>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-1.5 dark:text-slate-400"><Boxes size={14} /> Componentes comerciais</h4>
+              {comerciais.length > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <button onClick={() => setShowComerciais(true)} className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 hover:text-slate-900 px-2 py-1 rounded-md hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800" title="Visualizar componentes">
+                    <Eye size={14} /> Visualizar
+                  </button>
+                  <button onClick={() => { exportarComerciaisExcel(produto, comerciais); toast.success("Planilha de componentes exportada!"); }} className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 hover:text-slate-900 px-2 py-1 rounded-md hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800" title="Baixar componentes em Excel">
+                    <Download size={14} /> Baixar
+                  </button>
+                </div>
+              )}
+            </div>
             <ComponenteComercialGrid componentes={comerciais} catalogo={catalogoComercial} onChange={handleComerciais} />
           </div>
         </div>
@@ -128,6 +143,13 @@ export default function ProdutoCard({ produto, componentes, comerciais, acoOptio
         componentes={componentes}
         precoKg={precoKg}
         onDownload={() => { exportarPecasExcel(produto, componentes, precoKg); toast.success("Planilha de peças exportada!"); }}
+      />
+      <ComerciaisPreviewModal
+        open={showComerciais}
+        onClose={() => setShowComerciais(false)}
+        produto={produto}
+        componentes={comerciais}
+        onDownload={() => { exportarComerciaisExcel(produto, comerciais); toast.success("Planilha de componentes exportada!"); }}
       />
     </div>
   );
