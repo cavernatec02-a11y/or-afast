@@ -108,6 +108,46 @@ function wrapTextForPdf(doc, text, maxWidth) {
   return out.join("");
 }
 
+// Formata uma linha de composição: "14 montantes medindo 1000 x 2964mm."
+function formatComposicaoLinha(c) {
+  const qtde = Number(c.quantidade || 0);
+  const nome = (c.nome || "componente").trim();
+  const corte = c.corte ? Number(c.corte) : null;
+  const comp = c.comprimento ? Number(c.comprimento) : null;
+  let dim = "";
+  if (corte && comp) dim = ` medindo ${fmtDim(corte)} x ${fmtDim(comp)}mm`;
+  else if (comp) dim = ` medindo ${fmtDim(comp)}mm`;
+  else if (corte) dim = ` medindo ${fmtDim(corte)}mm`;
+  return `${qtde} ${nome}${dim}.`;
+}
+function fmtDim(v) {
+  const n = Number(v);
+  return String(Number.isInteger(n) ? n : Number(n.toFixed(2)));
+}
+
+// Renderiza uma lista de bullets com quebra de linha automática.
+function drawBulletList(doc, y, items, label) {
+  y = checkY(doc, y, 12);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(...DARK);
+  doc.text(label, M + 3, y + 4);
+  y += 6;
+  const innerW = W - 12;
+  items.forEach((item) => {
+    const wrapped = wrapTextForPdf(doc, item, innerW);
+    const lines = doc.splitTextToSize(wrapped, innerW);
+    y = checkY(doc, y, lines.length * 4 + 2);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+    doc.setTextColor(...DARK);
+    doc.text("•", M + 3, y + 4);
+    doc.text(lines, M + 8, y + 4);
+    y += lines.length * 4 + 2;
+  });
+  return y + 2;
+}
+
 function drawTableRow(doc, y, cols, cells, zebra) {
   y = checkY(doc, y, 7);
   if (zebra) { doc.setFillColor(248, 250, 252); doc.rect(M, y, W, 7, "F"); }
@@ -217,32 +257,16 @@ export async function gerarPDFOrcamento(orc) {
 
     const comps = (orc.componentes || []).filter((c) => c.produto_id === prod.id);
     if (comps.length > 0) {
-      const cols = [
-        { label: "Descrição", w: 140, align: "left" },
-        { label: "Qtde", w: 40, align: "right" },
-      ];
-      y = drawTableHeader(doc, y, cols);
-      comps.forEach((c, i) => {
-        y = drawTableRow(doc, y, cols, [
-          c.nome || "—", c.quantidade ?? 0,
-        ], i % 2 === 0);
-      });
-      y += 4;
+      y = drawBulletList(doc, y, comps.map(formatComposicaoLinha), "Composição do produto:");
     }
 
     const coms = (orc.componentes_comerciais || []).filter((c) => c.produto_id === prod.id);
     if (coms.length > 0) {
-      const cols2 = [
-        { label: "Componente / Acessório", w: 140, align: "left" },
-        { label: "Qtde", w: 40, align: "right" },
-      ];
-      y = drawTableHeader(doc, y, cols2);
-      coms.forEach((c, i) => {
-        y = drawTableRow(doc, y, cols2, [
-          c.descricao || "—", c.quantidade ?? 0,
-        ], i % 2 === 0);
+      const linhasCom = coms.map((c) => {
+        const un = c.unidade ? ` (${c.unidade})` : "";
+        return `${Number(c.quantidade || 0)}${un} ${c.descricao || "componente"}.`;
       });
-      y += 4;
+      y = drawBulletList(doc, y, linhasCom, "Acessórios e componentes comerciais:");
     }
 
     y += 4;
