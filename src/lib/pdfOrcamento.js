@@ -1,7 +1,7 @@
 import jsPDF from "jspdf";
-import { formatMoeda, formatPeso } from "@/lib/pricingEngine";
+import { formatMoeda } from "@/lib/pricingEngine";
+import { montarCondicoes } from "@/lib/pdfCondicoes";
 
-// URL da logo Ripresa (usada via fetch para embeddar no PDF)
 const LOGO_URL = "https://media.base44.com/images/public/6a95cd709d1eb3285a3e45a0/ae1c1268b_WhatsAppImage2026-07-20at152818.jpeg";
 
 async function loadImageBase64(url) {
@@ -18,97 +18,42 @@ async function loadImageBase64(url) {
   }
 }
 
-const M = 15; // margem lateral
-const W = 180; // largura útil (A4 = 210mm)
-const ORANGE = [255, 130, 0];
+const X0 = 20;          // margem esquerda
+const W = 158;          // largura útil
+const XR = X0 + W;      // borda direita
+const Y_MAX = 268;      // limite inferior do conteúdo
+const Y_START = 52;     // início do conteúdo nas páginas seguintes
 const DARK = [35, 31, 32];
-const GRAY = [88, 89, 91];
-const LIGHT = [248, 250, 252];
-const BORDER = [226, 232, 240];
+const ORANGE = [255, 130, 0];
+const LH = 4.6;
 
-function addPage(doc) {
-  doc.addPage();
-  return 20;
+const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+
+function dataExtensa(d) {
+  const [a, m, dia] = String(d || new Date().toISOString()).slice(0, 10).split("-").map(Number);
+  return `${String(dia).padStart(2, "0")} de ${MESES[m - 1]} de ${a}`;
 }
 
-function checkY(doc, y, needed = 14) {
-  if (y + needed > 280) return addPage(doc);
-  return y;
-}
-
-function headerLine(doc, y) {
-  doc.setDrawColor(...BORDER);
-  doc.setLineWidth(0.3);
-  doc.line(M, y, M + W, y);
-  return y;
-}
-
-function sectionTitle(doc, y, text) {
-  y = checkY(doc, y, 10);
-  doc.setFillColor(...ORANGE);
-  doc.rect(M, y, 3, 7, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(...DARK);
-  doc.text(text, M + 6, y + 5.5);
-  return y + 10;
-}
-
-function drawTableHeader(doc, y, cols) {
-  y = checkY(doc, y, 10);
-  doc.setFillColor(35, 31, 32);
-  doc.rect(M, y, W, 8, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(255, 255, 255);
-  let x = M;
-  cols.forEach(({ label, w, align }) => {
-    const display = fitText(doc, label, w - 4);
-    doc.text(display, align === "right" ? x + w - 2 : x + 2, y + 5.5, { align: align === "right" ? "right" : "left" });
-    x += w;
-  });
-  return y + 8;
-}
-
-function fitText(doc, txt, maxWidth) {
-  if (doc.getTextWidth(txt) <= maxWidth) return txt;
-  let t = txt;
-  while (doc.getTextWidth(t + "...") > maxWidth && t.length > 3) {
-    t = t.slice(0, -1);
-  }
-  return t + "...";
-}
-
-// Normaliza texto colado de outras fontes para quebrar corretamente no PDF:
-// - converte espaços não-quebráveis (NBSP e variantes) em espaços comuns
-// - quebra palavras longas demais (sem espaço) em pedaços que cabem na largura
+// Normaliza texto colado: NBSP -> espaço, quebra palavras gigantes
 function wrapTextForPdf(doc, text, maxWidth) {
-  let t = String(text || "")
-    .replace(/\r\n?/g, "\n")
-    .replace(/[\u00A0\u2007\u202F\uFEFF]/g, " ")   // espaços não-quebráveis -> espaço
-    .replace(/\t/g, " ")
-    .replace(/ +/g, " ");
-  const tokens = t.split(/(\s+)/);
+  const t = String(text || "").replace(/\r\n?/g, "\n").replace(/[\u00A0\u2007\u202F\uFEFF]/g, " ").replace(/\t/g, " ").replace(/ +/g, " ");
   const out = [];
-  for (const w of tokens) {
-    if (w === "" || /^\s+$/.test(w)) { out.push(w); continue; }
-    if (doc.getTextWidth(w) <= maxWidth) { out.push(w); continue; }
-    // palavra longa demais: quebra caractere a caractere
+  for (const w of t.split(/(\s+)/)) {
+    if (w === "" || /^\s+$/.test(w) || doc.getTextWidth(w) <= maxWidth) { out.push(w); continue; }
     let chunk = "";
     for (const ch of w) {
-      if (doc.getTextWidth(chunk + ch) > maxWidth && chunk) {
-        out.push(chunk + "\n");
-        chunk = ch;
-      } else {
-        chunk += ch;
-      }
+      if (doc.getTextWidth(chunk + ch) > maxWidth && chunk) { out.push(chunk + "\n"); chunk = ch; } else chunk += ch;
     }
     out.push(chunk);
   }
   return out.join("");
 }
 
-// Formata uma linha de composição: "14 montantes medindo 1000mm x 2964mm;"
+function fmtDim(v) {
+  const n = Number(v);
+  return String(Number.isInteger(n) ? n : Number(n.toFixed(2)));
+}
+
 function formatComposicaoLinha(c, isLast) {
   const qtde = Number(c.quantidade || 0);
   const nome = (c.nome || "componente").trim();
@@ -118,237 +63,195 @@ function formatComposicaoLinha(c, isLast) {
   if (corte && comp) dim = ` medindo ${fmtDim(corte)}mm x ${fmtDim(comp)}mm`;
   else if (comp) dim = ` medindo ${fmtDim(comp)}mm`;
   else if (corte) dim = ` medindo ${fmtDim(corte)}mm`;
-  const prefix = qtde > 0 ? `${qtde} ` : "";
-  return `${prefix}${nome}${dim}${isLast ? "." : ";"}`;
-}
-function fmtDim(v) {
-  const n = Number(v);
-  return String(Number.isInteger(n) ? n : Number(n.toFixed(2)));
+  return `${qtde > 0 ? qtde + " " : ""}${nome}${dim}${isLast ? "." : ";"}`;
 }
 
-// Renderiza uma lista de bullets com quebra de linha automática.
-function drawBulletList(doc, y, items, label) {
-  y = checkY(doc, y, 12);
+// ── Layout de página ─────────────────────────────────────────────────────────
+function drawHeader(doc, logo, comTitulo) {
+  if (logo) doc.addImage(logo, "JPEG", X0, 8, 30, 30);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
+  doc.setFontSize(10);
   doc.setTextColor(...DARK);
-  doc.text(label, M + 3, y + 4);
-  y += 6;
-  const innerW = W - 12;
-  items.forEach((item) => {
-    const wrapped = wrapTextForPdf(doc, item, innerW);
-    const lines = doc.splitTextToSize(wrapped, innerW);
-    y = checkY(doc, y, lines.length * 4 + 2);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.5);
-    doc.setTextColor(...DARK);
-    doc.text("•", M + 3, y + 4);
-    doc.text(lines, M + 8, y + 4);
-    y += lines.length * 4 + 2;
-  });
-  return y + 2;
+  doc.text("Tel.: (11) 4154-2959", XR, 20, { align: "right" });
+  doc.text("(11) 4154-2971", XR, 26, { align: "right" });
+  if (comTitulo) {
+    doc.setFontSize(16);
+    doc.text("Proposta Comercial", X0 + W / 2, 40, { align: "center" });
+  }
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.9);
+  doc.line(X0, 45, XR, 45);
+  doc.setLineWidth(0.2);
 }
 
-function drawTableRow(doc, y, cols, cells, zebra) {
-  y = checkY(doc, y, 7);
-  if (zebra) { doc.setFillColor(248, 250, 252); doc.rect(M, y, W, 7, "F"); }
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
+function newPage(doc, logo) {
+  doc.addPage();
+  drawHeader(doc, logo, false);
+  return Y_START;
+}
+
+function ensure(doc, logo, y, need) {
+  return y + need > Y_MAX ? newPage(doc, logo) : y;
+}
+
+// Escreve texto com quebra de linha e de página. Retorna novo y.
+function writeText(doc, logo, y, text, { x = X0, w = W, bold = false, size = 9.5, bullet = null, underline = false, align = "left", gap = 0 } = {}) {
+  doc.setFont("helvetica", bold ? "bold" : "normal");
+  doc.setFontSize(size);
   doc.setTextColor(...DARK);
-  let x = M;
-  cols.forEach(({ w, align }, i) => {
-    const txt = String(cells[i] ?? "");
-    const display = fitText(doc, txt, w - 4);
-    doc.text(display, align === "right" ? x + w - 2 : x + 2, y + 5, { align: align === "right" ? "right" : "left" });
-    x += w;
+  const innerW = w - (bullet ? 5 : 0);
+  const lines = doc.splitTextToSize(wrapTextForPdf(doc, text, innerW), innerW);
+  lines.forEach((ln, i) => {
+    y = ensure(doc, logo, y, LH);
+    doc.setFont("helvetica", bold ? "bold" : "normal");
+    doc.setFontSize(size);
+    doc.setTextColor(...DARK);
+    if (bullet && i === 0) doc.text(bullet, x, y + 3.5);
+    const tx = x + (bullet ? 5 : 0);
+    if (align === "center") doc.text(ln, x + w / 2, y + 3.5, { align: "center" });
+    else if (align === "right") doc.text(ln, x + w, y + 3.5, { align: "right" });
+    else doc.text(ln, tx, y + 3.5);
+    if (underline) {
+      const tw = doc.getTextWidth(ln);
+      const sx = align === "center" ? x + w / 2 - tw / 2 : align === "right" ? x + w - tw : tx;
+      doc.setLineWidth(0.2);
+      doc.line(sx, y + 4.3, sx + tw, y + 4.3);
+    }
+    y += LH;
   });
-  doc.setDrawColor(...BORDER);
-  doc.setLineWidth(0.1);
-  doc.line(M, y + 7, M + W, y + 7);
-  return y + 7;
+  return y + gap;
+}
+
+function drawSideBarAndFooter(doc) {
+  const n = doc.getNumberOfPages();
+  for (let p = 1; p <= n; p++) {
+    doc.setPage(p);
+    doc.setFillColor(...ORANGE);
+    doc.rect(192, 0, 18, 297, "F");
+    doc.setFillColor(255, 255, 255);
+    doc.rect(190.5, 0, 0.8, 297, "F");
+    doc.setFont("times", "normal");
+    doc.setFontSize(12);
+    doc.setTextColor(255, 255, 255);
+    doc.text("RIPRESA PROJETOS SOLUÇÕES ARMAZENAGEM E", 196, 12, { angle: -90 });
+    doc.text("SERVIÇOS EIRELLI", 203, 12, { angle: -90 });
+    // rodapé
+    doc.setTextColor(...DARK);
+    doc.setFont("times", "bold");
+    doc.setFontSize(9);
+    doc.text("RIPRESA", X0 + W / 2, 280, { align: "center" });
+    doc.setFont("times", "normal");
+    doc.setFontSize(8);
+    doc.text("Projetos, Soluções de Armazenagens e Serviços Eirelli", X0 + W / 2, 284, { align: "center" });
+    doc.text("(11) 4154-2959 / (11) 4154-2971", X0 + W / 2, 288, { align: "center" });
+    if (p > 1) doc.text(String(p), X0 + W / 2, 292, { align: "center" });
+  }
+}
+
+// Divide o valor de venda entre os produtos, proporcional ao custo de cada um.
+function valoresPorProduto(orc) {
+  const prods = orc.produtos || [];
+  const pesos = prods.map((p) => {
+    const aco = (orc.componentes || []).filter((c) => c.produto_id === p.id).reduce((s, c) => s + Number(c.peso_total || 0), 0);
+    const com = (orc.componentes_comerciais || []).filter((c) => c.produto_id === p.id).reduce((s, c) => s + Number(c.total || 0), 0);
+    return aco * Number(orc.preco_aco_kg || 1) + com;
+  });
+  const soma = pesos.reduce((a, b) => a + b, 0);
+  return pesos.map((v) => (soma > 0 ? (Number(orc.valor_venda || 0) * v) / soma : Number(orc.valor_venda || 0) / (prods.length || 1)));
 }
 
 export async function gerarPDFOrcamento(orc) {
-  const logoB64 = await loadImageBase64(LOGO_URL);
+  const logo = await loadImageBase64(LOGO_URL);
   const doc = new jsPDF({ unit: "mm", format: "a4" });
+  drawHeader(doc, logo, true);
+  let y = 50;
 
-  // ── CABEÇALHO ────────────────────────────────────────────────────────────────
-  if (logoB64) {
-    doc.addImage(logoB64, "JPEG", M, 8, 22, 22);
-  }
-  // Nome da empresa
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.setTextColor(...DARK);
-  doc.text("RIPRESA", M + 26, 16);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(...GRAY);
-  doc.text("Soluções de Armazenagem", M + 26, 21);
-  // Contato comercial (direita)
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.setTextColor(...GRAY);
-  doc.text("hericke.comercial@ripresa.com.br", M + W, 14, { align: "right" });
-  doc.text("(11) 97376-0433  ·  https://ripresa.com.br", M + W, 19, { align: "right" });
-  // Linha divisória laranja
-  doc.setDrawColor(...ORANGE);
-  doc.setLineWidth(1.2);
-  doc.line(M, 34, M + W, 34);
-  doc.setLineWidth(0.3);
+  // Data e número
+  y = writeText(doc, logo, y, `Santana de Parnaíba, ${dataExtensa(orc.data)}`, { align: "right" });
+  y = writeText(doc, logo, y, `Orçamento Nº ${orc.titulo || "—"}`, { align: "right", bold: true, gap: 6 });
 
-  // Dados da empresa
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7.5);
-  doc.setTextColor(...GRAY);
-  doc.text("CNPJ: 21.567.464/0001-54  ·  Estrada dos Romeiros, 796 - Centro, Santana de Parnaíba-SP  ·  Cep: 06501-001", M + W / 2, 38, { align: "center" });
+  // Cliente
+  y = writeText(doc, logo, y, "À", { bold: true });
+  y = writeText(doc, logo, y, orc.cliente_nome || "—", { bold: true });
+  if (orc.uf) y = writeText(doc, logo, y, orc.uf, { bold: true });
+  y = writeText(doc, logo, y, `Fone: ${orc.telefone || ""}`);
+  y = writeText(doc, logo, y, `E-mail: ${orc.email || ""}`, { gap: 6 });
+  if (orc.contato) y = writeText(doc, logo, y, `A/C Sr. ${orc.contato}`, { bold: true, underline: true, align: "center", gap: 6 });
 
-  // Título "PROPOSTA COMERCIAL"
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
-  doc.setTextColor(...DARK);
-  doc.text("PROPOSTA COMERCIAL", M + W / 2, 48, { align: "center" });
+  const servicos = ["fornecimento"];
+  if (orc.cobrar_frete && orc.frete > 0) servicos.push("frete");
+  if (orc.cobrar_montagem && orc.montagem > 0) servicos.push("montagem");
+  const lista = servicos.length > 1 ? servicos.slice(0, -1).join(", ") + " e " + servicos[servicos.length - 1] : servicos[0];
+  y = writeText(doc, logo, y, `Ref.: Proposta para ${lista} conforme projeto: ${orc.numero_projeto || "—"}`, { bold: true, underline: true, gap: 6 });
+  y = writeText(doc, logo, y, "Prezado Senhor,", { bold: true, gap: 3 });
+  y = writeText(doc, logo, y, "Temos o prazer de apresentar o nosso orçamento do material abaixo descrito, para sua avaliação.", { x: X0 + 10, w: W - 10, gap: 6 });
 
-  let y = 56;
-
-  // ── DADOS DO ORÇAMENTO ───────────────────────────────────────────────────────
-  doc.setFillColor(...LIGHT);
-  doc.setDrawColor(...BORDER);
-  doc.roundedRect(M, y, W, 10, 1, 1, "FD");
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.setTextColor(...GRAY);
-  const tituloLabel = `Orçamento: ${orc.titulo || "—"}`;
-  const metaLabel = `Projeto: ${orc.numero_projeto || "—"}   Folha: ${orc.numero_folha || "—"}   Data: ${fmtData(orc.data)}   Validade: ${orc.validade_dias || 15} dias`;
-  doc.text(tituloLabel, M + 3, y + 4.5);
-  doc.text(metaLabel, M + 3, y + 8.5);
-  y += 15;
-
-  // ── CLIENTE ──────────────────────────────────────────────────────────────────
-  y = sectionTitle(doc, y, "DADOS DO CLIENTE");
-  doc.setFillColor(...LIGHT);
-  doc.setDrawColor(...BORDER);
-  doc.roundedRect(M, y, W, 18, 1, 1, "FD");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.setTextColor(...DARK);
-  doc.text(orc.cliente_nome || "—", M + 3, y + 5.5);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.setTextColor(...GRAY);
-  doc.text(`Contato: ${orc.contato || "—"}   Fone: ${orc.telefone || "—"}   E-mail: ${orc.email || "—"}`, M + 3, y + 10.5);
-  doc.text(`UF: ${orc.uf || "—"}   Projeto nº: ${orc.numero_projeto || "—"}`, M + 3, y + 15.5);
-  y += 23;
-
-  // ── PRODUTOS ─────────────────────────────────────────────────────────────────
-  (orc.produtos || []).forEach((prod, pi) => {
-    y = checkY(doc, y, 20);
-    y = sectionTitle(doc, y, `PRODUTO ${pi + 1}${prod.nome || prod.tipo_produto ? " — " + (prod.nome || prod.tipo_produto) : ""}`);
-
-    if (prod.descricao) {
-      y = checkY(doc, y, 15);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(8.5);
-      doc.setTextColor(...DARK);
-      const label = "Descrição do projeto: ";
-      doc.text(label, M + 3, y + 4);
-      const labelW = doc.getTextWidth(label);
-      doc.setFont("helvetica", "normal");
-      const descWrapped = wrapTextForPdf(doc, prod.descricao, W - 8);
-      const descLines = doc.splitTextToSize(descWrapped, W - 8 - labelW);
-      doc.text(descLines[0], M + 3 + labelW, y + 4);
-      if (descLines.length > 1) doc.text(descLines.slice(1), M + 3, y + 8);
-      y += descLines.length * 4 + 4;
-    }
+  // Itens
+  const prods = orc.produtos || [];
+  const valores = valoresPorProduto(orc);
+  prods.forEach((prod, i) => {
+    y = ensure(doc, logo, y, 30);
+    const titulo = (prod.tipo_produto || prod.nome || "").toUpperCase();
+    y = writeText(doc, logo, y, `Item ${String(i + 1).padStart(2, "0")} – ${titulo}`, { bold: true, underline: true, gap: 2 });
+    if (prod.descricao) y = writeText(doc, logo, y, prod.descricao, { bullet: "•", gap: 3 });
 
     const comps = (orc.componentes || []).filter((c) => c.produto_id === prod.id);
-    if (comps.length > 0) {
-      y = drawBulletList(doc, y, comps.map((c, i) => formatComposicaoLinha(c, i === comps.length - 1)), "Composição do produto:");
-    }
-
     const coms = (orc.componentes_comerciais || []).filter((c) => c.produto_id === prod.id);
-    if (coms.length > 0) {
-      const linhasCom = coms.map((c) => {
-        const un = c.unidade ? ` (${c.unidade})` : "";
-        return `${Number(c.quantidade || 0)}${un} ${c.descricao || "componente"}.`;
-      });
-      y = drawBulletList(doc, y, linhasCom, "Acessórios e componentes comerciais:");
+    if (comps.length > 0) {
+      y = writeText(doc, logo, y, "Composição total dos módulos:", { bold: true, gap: 1 });
+      comps.forEach((c, k) => { y = writeText(doc, logo, y, formatComposicaoLinha(c, k === comps.length - 1), { bullet: "•", x: X0 + 2, w: W - 2 }); });
+      y += 2;
     }
-
-    y += 4;
+    if (coms.length > 0) {
+      y = writeText(doc, logo, y, "Acessórios e componentes:", { bold: true, gap: 1 });
+      coms.forEach((c) => {
+        const un = c.unidade ? ` (${c.unidade})` : "";
+        y = writeText(doc, logo, y, `${Number(c.quantidade || 0)}${un} ${c.descricao || "componente"}.`, { bullet: "•", x: X0 + 2, w: W - 2 });
+      });
+      y += 2;
+    }
+    y = writeText(doc, logo, y + 2, `Valor do Item ${String(i + 1).padStart(2, "0")}: ${formatMoeda(valores[i])}`, { bold: true, underline: true, gap: 4 });
   });
 
-  // ── RESUMO FINANCEIRO ────────────────────────────────────────────────────────
-  // Força nova página se não houver espaço suficiente para o resumo completo
-  if (y > 210) { doc.addPage(); y = 20; }
-  y = checkY(doc, y, 70);
-  y = sectionTitle(doc, y, "RESUMO FINANCEIRO");
+  // Valores finais
+  y = ensure(doc, logo, y, 30);
+  if (orc.cobrar_montagem && orc.montagem > 0) y = writeText(doc, logo, y, `Valor da Montagem: ${formatMoeda(orc.montagem)}`, { bold: true, underline: true });
+  if (orc.cobrar_frete && orc.frete > 0) y = writeText(doc, logo, y, `Valor do Frete: ${formatMoeda(orc.frete)}`, { bold: true, underline: true });
+  y = writeText(doc, logo, y + 6, `Valor Total ${formatMoeda(orc.total_cliente)}`, { bold: true, underline: true, align: "center", size: 11 });
 
-  // Tabela de itens do resumo — valor das estruturas separado de frete e montagem
-  const itensResumo = [];
-  itensResumo.push(["Valor das Estruturas Metálicas", formatMoeda(orc.valor_venda)]);
-  if (orc.cobrar_montagem && orc.montagem > 0) itensResumo.push(["Montagem", formatMoeda(orc.montagem)]);
-  if (orc.cobrar_frete && orc.frete > 0) itensResumo.push(["Frete", formatMoeda(orc.frete)]);
-
-  const colsRes = [
-    { label: "Descrição", w: 140, align: "left" },
-    { label: "Valor", w: 40, align: "right" },
-  ];
-  y = drawTableHeader(doc, y, colsRes);
-  itensResumo.forEach(([desc, val], i) => {
-    y = drawTableRow(doc, y, colsRes, [desc, val], i % 2 === 0);
+  // Condições gerais (nova página)
+  y = newPage(doc, logo);
+  montarCondicoes(orc).forEach((it) => {
+    const x = X0 + (it.i || 0) * 8;
+    const w = W - (it.i || 0) * 8;
+    if (it.t === "h") y = writeText(doc, logo, y + 3, it.x, { bold: true, underline: true, gap: 2 });
+    else if (it.t === "hb") y = writeText(doc, logo, y + 3, it.x, { bold: true, gap: 2 });
+    else if (it.t === "b") y = writeText(doc, logo, y + 2, it.x, { x, w, bold: true, gap: 2 });
+    else if (it.t === "bul") y = writeText(doc, logo, y, it.x, { x: X0 + 8, w: W - 8, bold: true, bullet: "•", gap: 1 });
+    else if (it.t === "dash") y = writeText(doc, logo, y, it.x, { x: X0 + 4, w: W - 4, bullet: "-", gap: 1 });
+    else y = writeText(doc, logo, y, it.x, { x, w, gap: 2 });
   });
-  y += 2;
 
-  // Caixa VALOR TOTAL
-  y = checkY(doc, y, 18);
-  doc.setFillColor(...ORANGE);
-  doc.roundedRect(M, y, W, 14, 2, 2, "F");
+  // Assinaturas
+  y = ensure(doc, logo, y + 20, 45);
+  doc.setLineWidth(0.3);
+  doc.line(X0, y, X0 + 65, y);
+  doc.line(X0 + 95, y, XR, y);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
-  doc.setTextColor(255, 255, 255);
-  doc.text("VALOR TOTAL DA PROPOSTA", M + 4, y + 9);
-  doc.text(formatMoeda(orc.total_cliente), M + W - 3, y + 9, { align: "right" });
-  y += 18;
+  doc.setFontSize(9.5);
+  doc.text("Data", X0, y + 4.5);
+  doc.text("Cliente", X0 + 95, y + 4.5);
+  doc.text("/        /", X0 + 25, y - 1);
+  y += 14;
+  doc.setFont("helvetica", "normal");
+  doc.text("Atenciosamente,", X0, y);
+  doc.line(X0, y + 16, X0 + 110, y + 16);
+  doc.setFont("helvetica", "bold");
+  doc.text("Ripresa Projetos, Soluções de Armazenagens e Serviços Eirelli", X0, y + 20.5);
 
-  // ── OBSERVAÇÕES ──────────────────────────────────────────────────────────────
-  y = checkY(doc, y, 24);
-  doc.setFillColor(...LIGHT);
-  doc.setDrawColor(...BORDER);
-  doc.roundedRect(M, y, W, 22, 1, 1, "FD");
-  doc.setFont("helvetica", "italic");
-  doc.setFontSize(8);
-  doc.setTextColor(...GRAY);
-  doc.text(`• Proposta válida por ${orc.validade_dias || 15} dias a partir da data de emissão.`, M + 4, y + 6);
-  doc.text("• Valores sujeitos a confirmação após detalhamento técnico final.", M + 4, y + 11);
-  doc.text("• Prazo de entrega e condições de pagamento a combinar.", M + 4, y + 16);
-  y += 24;
-
-  // ── RODAPÉ ───────────────────────────────────────────────────────────────────
-  const pageCount = doc.getNumberOfPages();
-  for (let p = 1; p <= pageCount; p++) {
-    doc.setPage(p);
-    doc.setDrawColor(...ORANGE);
-    doc.setLineWidth(0.8);
-    doc.line(M, 287, M + W, 287);
-    doc.setLineWidth(0.3);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7.5);
-    doc.setTextColor(...GRAY);
-    doc.text("RIPRESA  ·  CNPJ: 21.567.464/0001-54  ·  Estrada dos Romeiros, 796 - Santana de Parnaíba-SP  ·  Cep: 06501-001", M, 290);
-    doc.text("hericke.comercial@ripresa.com.br  ·  (11) 97376-0433  ·  https://ripresa.com.br", M, 293.5);
-    doc.text(`Página ${p}/${pageCount}  ·  ${fmtData(new Date().toISOString())}`, M + W, 293.5, { align: "right" });
-  }
+  drawSideBarAndFooter(doc);
 
   const blob = doc.output("blob");
   const url = URL.createObjectURL(blob);
   return { url, fileName: `Proposta-Ripresa-${(orc.titulo || "proposta").replace(/[^a-zA-Z0-9]/g, "_")}.pdf` };
-}
-
-function fmtData(d) {
-  if (!d) return "—";
-  try { return new Date(d).toLocaleDateString("pt-BR"); } catch { return String(d); }
-}
-function fmtNum(v) {
-  return Number(v || 0).toLocaleString("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 }
