@@ -108,17 +108,18 @@ function wrapTextForPdf(doc, text, maxWidth) {
   return out.join("");
 }
 
-// Formata uma linha de composição: "14 montantes medindo 1000 x 2964mm."
-function formatComposicaoLinha(c) {
+// Formata uma linha de composição: "14 montantes medindo 1000mm x 2964mm;"
+function formatComposicaoLinha(c, isLast) {
   const qtde = Number(c.quantidade || 0);
   const nome = (c.nome || "componente").trim();
   const corte = c.corte ? Number(c.corte) : null;
   const comp = c.comprimento ? Number(c.comprimento) : null;
   let dim = "";
-  if (corte && comp) dim = ` medindo ${fmtDim(corte)} x ${fmtDim(comp)}mm`;
+  if (corte && comp) dim = ` medindo ${fmtDim(corte)}mm x ${fmtDim(comp)}mm`;
   else if (comp) dim = ` medindo ${fmtDim(comp)}mm`;
   else if (corte) dim = ` medindo ${fmtDim(corte)}mm`;
-  return `${qtde} ${nome}${dim}.`;
+  const prefix = qtde > 0 ? `${qtde} ` : "";
+  return `${prefix}${nome}${dim}${isLast ? "." : ";"}`;
 }
 function fmtDim(v) {
   const n = Number(v);
@@ -246,18 +247,23 @@ export async function gerarPDFOrcamento(orc) {
 
     if (prod.descricao) {
       y = checkY(doc, y, 15);
-      doc.setFont("helvetica", "normal");
+      doc.setFont("helvetica", "bold");
       doc.setFontSize(8.5);
       doc.setTextColor(...DARK);
+      const label = "Descrição do projeto: ";
+      doc.text(label, M + 3, y + 4);
+      const labelW = doc.getTextWidth(label);
+      doc.setFont("helvetica", "normal");
       const descWrapped = wrapTextForPdf(doc, prod.descricao, W - 8);
-      const descLines = doc.splitTextToSize(descWrapped, W - 8);
-      doc.text(descLines, M + 3, y + 4);
+      const descLines = doc.splitTextToSize(descWrapped, W - 8 - labelW);
+      doc.text(descLines[0], M + 3 + labelW, y + 4);
+      if (descLines.length > 1) doc.text(descLines.slice(1), M + 3, y + 8);
       y += descLines.length * 4 + 4;
     }
 
     const comps = (orc.componentes || []).filter((c) => c.produto_id === prod.id);
     if (comps.length > 0) {
-      y = drawBulletList(doc, y, comps.map(formatComposicaoLinha), "Composição do produto:");
+      y = drawBulletList(doc, y, comps.map((c, i) => formatComposicaoLinha(c, i === comps.length - 1)), "Composição do produto:");
     }
 
     const coms = (orc.componentes_comerciais || []).filter((c) => c.produto_id === prod.id);
