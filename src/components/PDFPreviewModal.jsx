@@ -1,13 +1,32 @@
-import React, { useEffect } from "react";
-import { X, Download } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { X, Download, Pencil } from "lucide-react";
+import PdfEditorModal from "@/components/PdfEditorModal";
 
 // Modal de pré-visualização do PDF — mostra o documento antes de baixar.
-export default function PDFPreviewModal({ pdfUrl, fileName, onClose }) {
+// Inclui edição: abre o PdfEditorModal para reescrever, apagar e adicionar itens,
+// salvando as alterações direto no PDF.
+export default function PDFPreviewModal({ pdfUrl, fileName, pdfBytes, onClose, onEdited }) {
+  const [editing, setEditing] = useState(false);
+
   useEffect(() => {
     return () => {
       if (pdfUrl) URL.revokeObjectURL(pdfUrl);
     };
   }, [pdfUrl]);
+
+  if (editing && pdfBytes) {
+    return (
+      <PdfEditorModal
+        pdfBytes={pdfBytes}
+        fileName={fileName}
+        onClose={() => setEditing(false)}
+        onSave={(newBytes, newUrl) => {
+          if (onEdited) onEdited(newUrl, newBytes);
+          setEditing(false);
+        }}
+      />
+    );
+  }
 
   if (!pdfUrl) return null;
 
@@ -26,6 +45,11 @@ export default function PDFPreviewModal({ pdfUrl, fileName, onClose }) {
         <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 dark:border-slate-700">
           <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Pré-visualização da Proposta</h3>
           <div className="flex items-center gap-2">
+            {pdfBytes && (
+              <button onClick={() => setEditing(true)} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+                <Pencil size={16} /> Editar PDF
+              </button>
+            )}
             <button onClick={baixar} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition">
               <Download size={16} /> Baixar PDF
             </button>

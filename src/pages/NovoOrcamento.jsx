@@ -308,7 +308,9 @@ export default function NovoOrcamento() {
       <PDFPreviewModal
         pdfUrl={pdfPreview?.url}
         fileName={pdfPreview?.fileName}
+        pdfBytes={pdfPreview?.bytes}
         onClose={() => setPdfPreview(null)}
+        onEdited={(newUrl, newBytes) => setPdfPreview((p) => ({ ...p, url: newUrl, bytes: newBytes }))}
       />
     </div>
   );

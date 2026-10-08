@@ -251,7 +251,8 @@ export async function gerarPDFOrcamento(orc) {
 
   drawSideBarAndFooter(doc);
 
-  const blob = doc.output("blob");
-  const url = URL.createObjectURL(blob);
-  return { url, fileName: `Proposta-Ripresa-${(orc.titulo || "proposta").replace(/[^a-zA-Z0-9]/g, "_")}.pdf` };
+  const ab = doc.output("arraybuffer");
+  const bytes = new Uint8Array(ab);
+  const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+  return { url, bytes, fileName: `Proposta-Ripresa-${(orc.titulo || "proposta").replace(/[^a-zA-Z0-9]/g, "_")}.pdf` };
 }
