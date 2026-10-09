@@ -102,6 +102,13 @@
   }
 }
 
+@media print {
+  header, nav, button, .no-print { display: none !important; }
+  body { background: #fff !important; }
+  .print-area { padding: 0 !important; max-width: none !important; }
+  tr { break-inside: avoid; }
+}
+
 /* ── Dark mode: override hardcoded light colors ─────────────────────────── */
 .dark .bg-white { background-color: hsl(var(--card)) !important; }
 .dark .bg-slate-50 { background-color: hsl(var(--background)) !important; }

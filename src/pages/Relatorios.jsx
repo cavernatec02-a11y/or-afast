@@ -1,11 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { BarChart3, TrendingUp, CheckCircle2, FileText, Calendar } from "lucide-react";
+import { BarChart3 } from "lucide-react";
+import FiltrosBar from "@/components/relatorios/FiltrosBar";
+import KpiCards from "@/components/relatorios/KpiCards";
+import TabelaOrcamentos from "@/components/relatorios/TabelaOrcamentos";
+import ExportMenu from "@/components/relatorios/ExportMenu";
+import { filtrar, kpis, financeiro, fmtData } from "@/lib/relatorioUtils";
+import { exportarRelatorioPDF, exportarRelatorioCSV } from "@/lib/exportRelatorio";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from "recharts";
 import Navbar from "@/components/Navbar";
 import { orcamentosStore } from "@/lib/sharedStore";
 import { formatMoeda } from "@/lib/pricingEngine";
 
-const STATUS_LABELS = { rascunho: "Rascunho", enviado: "Enviado", aprovado: "Aprovado", recusado: "Recusado" };
 
 export default function Relatorios() {
   const [orcamentos, setOrcamentos] = useState([]);
@@ -24,36 +29,24 @@ export default function Relatorios() {
     return () => clearInterval(interval);
   }, []);
 
+  const [filtros, setFiltros] = useState({ inicio: "", fim: "", atalho: "todos", status: "todos", tipo: "todos", busca: "" });
+  const filtrados = useMemo(() => filtrar(orcamentos, filtros).sort((a, b) => String(b.data || "").localeCompare(String(a.data || ""))), [orcamentos, filtros]);
+  const k = useMemo(() => kpis(filtrados), [filtrados]);
+  const periodo = filtros.inicio || filtros.fim ? `${fmtData(filtros.inicio) || "início"} a ${fmtData(filtros.fim)}` : "Todo o histórico";
+
   // Agrupar por mês (YYYY-MM) — apenas aprovados
   const dadosMensais = useMemo(() => {
     const grupos = {};
-    orcamentos
+    filtrados
       .filter((o) => o.status === "aprovado" && o.data)
       .forEach((o) => {
         const mes = o.data.slice(0, 7); // YYYY-MM
         if (!grupos[mes]) grupos[mes] = { mes, count: 0, total: 0 };
         grupos[mes].count += 1;
-        grupos[mes].total += Number(o.total_cliente) || 0;
+        grupos[mes].total += financeiro(o).total;
       });
     return Object.values(grupos).sort((a, b) => a.mes.localeCompare(b.mes));
-  }, [orcamentos]);
-
-  // Totais gerais por status
-  const totaisStatus = useMemo(() => {
-    const t = { rascunho: 0, enviado: 0, aprovado: 0, recusado: 0 };
-    orcamentos.forEach((o) => { t[o.status || "rascunho"] += 1; });
-    return t;
-  }, [orcamentos]);
-
-  const valorTotalAprovado = useMemo(
-    () => orcamentos.filter((o) => o.status === "aprovado").reduce((s, o) => s + (Number(o.total_cliente) || 0), 0),
-    [orcamentos]
-  );
-
-  const ticketMedio = useMemo(() => {
-    const aprovados = orcamentos.filter((o) => o.status === "aprovado");
-    return aprovados.length > 0 ? valorTotalAprovado / aprovados.length : 0;
-  }, [orcamentos, valorTotalAprovado]);
+  }, [filtrados]);
 
   const chartData = useMemo(
     () => dadosMensais.map((d) => ({ mes: formatarMes(d.mes), valor: d.total, count: d.count })),
@@ -63,21 +56,24 @@ export default function Relatorios() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <Navbar />
-      <main className="max-w-7xl mx-auto px-4 py-6">
+      <main className="print-area max-w-7xl mx-auto px-4 py-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center"><BarChart3 size={22} /></div>
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Relatórios</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Orçamentos aprovados por mês e indicadores comerciais</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Indicadores comerciais · {periodo}</p>
           </div>
+          <ExportMenu onPDF={() => exportarRelatorioPDF(filtrados, k, periodo)} onCSV={() => exportarRelatorioCSV(filtrados)} />
         </div>
 
-        {/* Cards de resumo */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <SummaryCard icon={<CheckCircle2 size={20} />} label="Orçamentos Aprovados" value={totaisStatus.aprovado} tone="emerald" />
-          <SummaryCard icon={<TrendingUp size={20} />} label="Valor Total Aprovado" value={formatMoeda(valorTotalAprovado)} tone="primary" />
-          <SummaryCard icon={<FileText size={20} />} label="Ticket Médio" value={formatMoeda(ticketMedio)} tone="blue" />
-          <SummaryCard icon={<Calendar size={20} />} label="Total de Orçamentos" value={orcamentos.length} tone="slate" />
+        <FiltrosBar filtros={filtros} setFiltros={setFiltros} />
+        <KpiCards k={k} total={filtrados.length} />
+
+        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden mb-6 dark:border-slate-700 dark:bg-slate-900">
+          <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700">
+            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Detalhamento por Orçamento ({filtrados.length})</h2>
+          </div>
+          <TabelaOrcamentos lista={filtrados} />
         </div>
 
         {/* Gráfico de barras — valor aprovado por mês */}
@@ -142,15 +138,6 @@ export default function Relatorios() {
           )}
         </div>
 
-        {/* Distribuição por status */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-          {Object.entries(STATUS_LABELS).map(([key, label]) => (
-            <div key={key} className="bg-white rounded-xl border border-slate-200 p-4 dark:border-slate-700 dark:bg-slate-900">
-              <div className="text-xs font-medium text-slate-500 uppercase tracking-wide dark:text-slate-400">{label}</div>
-              <div className="text-2xl font-bold text-slate-900 mt-1 dark:text-slate-100">{totaisStatus[key]}</div>
-            </div>
-          ))}
-        </div>
       </main>
     </div>
   );
