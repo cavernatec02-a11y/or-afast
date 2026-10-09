@@ -40,8 +40,34 @@ function fmtData(d) {
   return `${dia}/${m}/${a}`;
 }
 
+// Sanitiza texto: substitui glifos de bullet corrompidos (ð· etc.) por "•" limpo
+// (• = 0x95 no WinAnsi, renderizado corretamente pela helvetica do jsPDF) e remove
+// caracteres fora do WinAnsi/Latin-1, que é o que causa os símbolos "ð·" no PDF.
+function sanitizeText(text) {
+  if (text == null) return "";
+  let t = String(text)
+    .replace(/\r\n?/g, "\n")
+    .replace(/[\u00A0\u2007\u202F\uFEFF]/g, " ")
+    .replace(/\t/g, " ");
+  t = t.replace(/[\u2022\u2023\u25E6\u25AA\u25CF\u25B8\u25B9\u25B6\u25B7\u2043\u204C\u204D\u2042\u00B7]/g, "\u2022");
+  t = t.replace(/(^|\n)[ \t]*[-\u2013\u2014][ \t]+/g, "$1\u2022 ");
+  t = t.replace(/[^\x09\x0A\x0D\x20-\x7E\xA0-\xFF\u2022]/g, "");
+  return t.replace(/ +/g, " ");
+}
+
+// Quebra a descrição em tópicos, separando por quebras de linha e marcadores "•".
+function splitBullets(text) {
+  const clean = sanitizeText(text).trim();
+  if (!clean) return [];
+  return clean
+    .split(/\n+/)
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .flatMap((l) => l.split(/\u2022/).map((s) => s.trim()).filter(Boolean));
+}
+
 function wrap(doc, text, maxW) {
-  const t = String(text || "").replace(/\r\n?/g, "\n").replace(/[\u00A0\u2007\u202F\uFEFF]/g, " ").replace(/\t/g, " ").replace(/ +/g, " ");
+  const t = sanitizeText(text);
   const out = [];
   for (const w of t.split(/(\s+)/)) {
     if (w === "" || /^\s+$/.test(w) || doc.getTextWidth(w) <= maxW) { out.push(w); continue; }
@@ -71,8 +97,9 @@ function drawHeader(doc, logo) {
   doc.text("Projetos, Soluções de Armazenagem e Serviços", tx, 25);
   doc.setFontSize(8);
   doc.text("(11) 4154-2959  ·  (11) 4154-2971", XR, 18, { align: "right" });
-  doc.text("hericke.comercial@ripresa.com.br", XR, 23, { align: "right" });
-  doc.text("ripresa.com.br", XR, 28, { align: "right" });
+  doc.text("WhatsApp: (11) 97376-0433", XR, 23, { align: "right" });
+  doc.text("hericke.comercial@ripresa.com.br", XR, 28, { align: "right" });
+  doc.text("ripresa.com.br", XR, 33, { align: "right" });
   doc.setDrawColor(...BORDER);
   doc.setLineWidth(0.3);
   doc.line(M, 40, XR, 40);
@@ -99,6 +126,24 @@ function writeText(doc, logo, y, text, { x = M, w = W, bold = false, size = 9.5,
     else if (align === "right") doc.text(ln, x + w, y + 3.4, { align: "right" });
     else doc.text(ln, x, y + 3.4);
     y += LH;
+  });
+  return y + gap;
+}
+
+// Renderiza uma lista de tópicos com bullet "•" limpo, quebrando linhas longas.
+function writeBullets(doc, logo, y, bullets, { x = M, w = W, size = 9, gap = 2 } = {}) {
+  const indent = 4;
+  bullets.forEach((b) => {
+    const lines = doc.splitTextToSize(wrap(doc, b, w - indent), w - indent);
+    lines.forEach((ln, idx) => {
+      y = ensure(doc, logo, y, LH);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(size);
+      doc.setTextColor(...DARK);
+      if (idx === 0) doc.text("\u2022", x, y + 3.4);
+      doc.text(ln, x + indent, y + 3.4);
+      y += LH;
+    });
   });
   return y + gap;
 }
@@ -131,7 +176,8 @@ function drawFooters(doc) {
     doc.setTextColor(...GRAY);
     doc.text("Ripresa Projetos, Soluções de Armazenagem e Serviços Eirelli  ·  CNPJ: 21.567.464/0001-54", M, 286);
     doc.text("Estrada dos Romeiros, 796 - Centro - Santana de Parnaíba/SP - CEP 06501-001", M, 289.5);
-    doc.text(`Página ${p}/${n}`, XR, 289.5, { align: "right" });
+    doc.text("(11) 4154-2959  ·  (11) 97376-0433  ·  ripresa.com.br", M, 293);
+    doc.text(`Página ${p}/${n}`, XR, 293, { align: "right" });
   }
 }
 
@@ -186,13 +232,24 @@ export async function gerarPDFOrcamento(orc) {
   y = writeText(doc, logo, y, orc.contato ? `Prezado(a) Sr(a). ${orc.contato},` : "Prezado(a) Senhor(a),", { gap: 3 });
   y = writeText(doc, logo, y, "Agradecemos a oportunidade de apresentar nossa proposta para o projeto em referência. Apresentamos abaixo os itens e o valor correspondente para sua avaliação.", { gap: 4 });
 
-  // Itens — sem quantidades, sem composição detalhada
-  const prods = orc.produtos || [];
-  const valores = valoresPorProduto(orc);
+  // Itens — descrição técnica em tópicos (bullets limpos), sem composição detalhada.
+  const prods = (orc.produtos || []).filter((p) => p && (p.tipo_produto || p.nome || p.descricao));
+  const valores = valoresPorProduto({ ...orc, produtos: prods });
   prods.forEach((prod, i) => {
     const num = String(i + 1).padStart(2, "0");
     const titulo = (prod.tipo_produto || prod.nome || "Item").toUpperCase();
-    y = ensure(doc, logo, y, 24);
+    const valor = valores[i] || 0;
+    const temComps = (orc.componentes || []).some((c) => c.produto_id === prod.id) ||
+      (orc.componentes_comerciais || []).some((c) => c.produto_id === prod.id);
+    // Pula itens sem valor e sem componentes vinculados (evita "R$ 0,00" fantasmas)
+    if (valor === 0 && !temComps && !prod.descricao) return;
+
+    // Quantidade total de peças estruturais do produto (badge)
+    const qtdPecas = (orc.componentes || [])
+      .filter((c) => c.produto_id === prod.id)
+      .reduce((s, c) => s + (Number(c.quantidade) || 0), 0);
+
+    y = ensure(doc, logo, y, 30);
 
     // barra do item
     doc.setFillColor(...DARK);
@@ -207,12 +264,26 @@ export async function gerarPDFOrcamento(orc) {
     doc.text(titulo, XR, y + 5.5, { align: "right" });
     y += 10;
 
-    // descrição técnica do produto
-    if (prod.descricao) {
-      y = writeText(doc, logo, y, prod.descricao, { size: 9, gap: 2 });
+    // badge de quantidade (se houver peças vinculadas)
+    if (qtdPecas > 0) {
+      doc.setFillColor(...ORANGE);
+      doc.roundedRect(M, y, 34, 6, 1.5, 1.5, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(255, 255, 255);
+      doc.text(`Qtde: ${qtdPecas} ${qtdPecas === 1 ? "peça" : "peças"}`, M + 17, y + 4.1, { align: "center" });
+      y += 8;
     }
-    // valor do item
-    y = priceBox(doc, logo, y, `Valor do Item ${num}`, formatMoeda(valores[i]));
+
+    // descrição técnica em tópicos
+    if (prod.descricao) {
+      const bullets = splitBullets(prod.descricao);
+      if (bullets.length) y = writeBullets(doc, logo, y, bullets, { size: 9, gap: 2 });
+    }
+    // valor do item (só mostra se houver valor)
+    if (valor > 0) {
+      y = priceBox(doc, logo, y, `Valor do Item ${num}`, formatMoeda(valor));
+    }
     y += 3;
   });
 
@@ -243,7 +314,7 @@ export async function gerarPDFOrcamento(orc) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(...GRAY);
-  doc.text("hericke.comercial@ripresa.com.br  ·  (11) 4154-2959  ·  ripresa.com.br", M, y + 9);
+  doc.text("hericke.comercial@ripresa.com.br  ·  (11) 4154-2959  ·  (11) 97376-0433  ·  ripresa.com.br", M, y + 9);
 
   drawFooters(doc);
 
