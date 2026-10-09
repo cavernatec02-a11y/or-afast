@@ -4,10 +4,10 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --background: 210 20% 96%;
+    --foreground: 217 33% 17%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 217 33% 17%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
     --primary: 30 100% 50%;
@@ -100,6 +100,26 @@
     @apply w-full rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition;
     @apply dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:ring-primary/30 dark:focus:border-primary;
   }
+}
+
+/* ── Light mode: paleta suave (soft off-white) ─────────────────────────── */
+html:not(.dark) .bg-slate-50 { background-color: #F4F6F8; }
+html:not(.dark) .bg-white.border,
+html:not(.dark) .bg-white.rounded-2xl,
+html:not(.dark) .bg-white.rounded-xl {
+  border-color: #E2E8F0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+html:not(.dark) header.bg-white { border-bottom-color: #E5E7EB; box-shadow: none; }
+html:not(.dark) .sticky.bottom-0.bg-white\/95 { border-top-color: #E2E8F0; }
+html:not(.dark) .text-slate-900 { color: #1E293B; }
+html:not(.dark) .text-slate-500 { color: #64748B; }
+html:not(.dark) input, html:not(.dark) select, html:not(.dark) textarea { background-color: #FAFAFA; border-color: #D1D5DB; }
+html:not(.dark) input::placeholder, html:not(.dark) textarea::placeholder { color: #94A3B8; }
+html:not(.dark) input:focus, html:not(.dark) select:focus, html:not(.dark) textarea:focus {
+  outline: none;
+  border-color: #EA580C;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15);
 }
 
 @media print {

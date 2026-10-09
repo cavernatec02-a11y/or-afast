@@ -15,7 +15,7 @@ export default function TotalizadorBar({
   }[status.level];
 
   return (
-    <div className="sticky bottom-0 z-20 border-t border-slate-200 bg-white/95 backdrop-blur-md shadow-[0_-4px_20px_-8px_rgba(0,0,0,0.15)] dark:border-slate-700 dark:bg-slate-900/95">
+    <div className="sticky bottom-0 z-20 border-t border-slate-200 bg-white/95 backdrop-blur-[8px] shadow-[0_-4px_12px_rgba(0,0,0,0.04)] dark:border-slate-700 dark:bg-slate-900/95">
       <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center gap-x-5 gap-y-3">
         <Stat label="Peso Total" value={`${formatPeso(pesoTotal)} kg`} highlight />
         <Stat label="Custo da Empresa" value={formatMoeda(custoEmpresa)} />
