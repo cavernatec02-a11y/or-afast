@@ -236,7 +236,11 @@ export default function NovoOrcamento() {
           </div>
         </Section>
 
-        <Section n="2" icon={<Package size={18} />} title="Produtos do orçamento" subtitle="Escolha o modo de cálculo: por componentes (peças) ou por peso direto.">
+        <Section n="2" icon={<Coins size={18} />} title="Custo do Aço" subtitle="Informe o preço de mercado do aço (R$/kg). O sistema calcula peso total × preço.">
+          <CustoAcoCard pesoTotal={totais.peso_total_aco} precoKg={precoAcoKg} setPrecoKg={setPrecoAcoKg} custoAco={totais.custo_total_aco} />
+        </Section>
+
+        <Section n="3" icon={<Package size={18} />} title="Produtos do orçamento" subtitle="Escolha o modo de cálculo: por componentes (peças) ou por peso direto.">
           <div className="flex gap-2 mb-4">
             <button
               type="button"
@@ -264,9 +268,6 @@ export default function NovoOrcamento() {
           )}
         </Section>
 
-        <Section n="3" icon={<Coins size={18} />} title="Custo do Aço" subtitle="Informe o preço de mercado do aço (R$/kg). O sistema calcula peso total × preço.">
-          <CustoAcoCard pesoTotal={totais.peso_total_aco} precoKg={precoAcoKg} setPrecoKg={setPrecoAcoKg} custoAco={totais.custo_total_aco} />
-        </Section>
 
         <Section n="4" icon={<Calculator size={18} />} title="Custos adicionais" subtitle="Montagem e frete (marque se o cliente paga), comissão e metas de margem.">
           <CustosAdicionais
