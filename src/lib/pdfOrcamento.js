@@ -287,9 +287,48 @@ export async function gerarPDFOrcamento(orc) {
     y += 3;
   });
 
+  // Resumo de investimento: subtotal + frete + montagem (soma fecha no total)
+  const subtotal = Number(orc.valor_venda || 0);
+  const vFrete = Number(orc.frete || 0);
+  const vMont = Number(orc.montagem || 0);
+  const freteCobrado = orc.cobrar_frete && vFrete > 0;
+  const montCobrada = orc.cobrar_montagem && vMont > 0;
+  const linhas = [
+    ["Subtotal dos Itens / Estruturas:", formatMoeda(subtotal)],
+    ["Frete / Transporte:", freteCobrado ? formatMoeda(vFrete) : vFrete > 0 ? "Incluso" : "Por conta do cliente (Retira)"],
+    ["Serviço de Montagem e Instalação:", montCobrada ? formatMoeda(vMont) : vMont > 0 ? "Inclusa" : "Não inclusa (Por conta do cliente)"],
+  ];
+  const totalFinal = subtotal + (freteCobrado ? vFrete : 0) + (montCobrada ? vMont : 0);
+
+  y = ensure(doc, logo, y, 50);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...DARK);
+  doc.text("RESUMO DO INVESTIMENTO", M, y + 4);
+  y += 7;
+  const boxH = linhas.length * 7 + 4;
+  doc.setFillColor(...LIGHT);
+  doc.setDrawColor(...BORDER);
+  doc.roundedRect(M, y, W, boxH, 1.5, 1.5, "FD");
+  linhas.forEach(([label, val], idx) => {
+    const ly = y + 7 + idx * 7;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9.5);
+    doc.setTextColor(...GRAY);
+    doc.text(label, M + 4, ly);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...DARK);
+    doc.text(val, XR - 4, ly, { align: "right" });
+    if (idx < linhas.length - 1) {
+      doc.setDrawColor(...BORDER);
+      doc.line(M + 4, ly + 2.5, XR - 4, ly + 2.5);
+    }
+  });
+  y += boxH + 4;
+
   // Total
   y = ensure(doc, logo, y, 20);
-  y = priceBox(doc, logo, y, "VALOR TOTAL DA PROPOSTA", formatMoeda(orc.total_cliente), true);
+  y = priceBox(doc, logo, y, "VALOR TOTAL DA PROPOSTA", formatMoeda(totalFinal), true);
 
   // Validade + observação curta
   y = ensure(doc, logo, y, 14);
